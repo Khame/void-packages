@@ -1,2 +1,3 @@
 #!/bin/sh
+mkdir -p /var/log/asusd
 exec svlogd -tt /var/log/asusd

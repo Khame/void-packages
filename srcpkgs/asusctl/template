@@ -70,7 +70,6 @@ do_install() {
 
 	# ── layouty klawiatur ──
 	vmkdir usr/share/asusd
-	vmkdir var/log/asusd
 	if [ -d rog-aura/data/layouts ]; then
 		vcopy rog-aura/data/layouts/* usr/share/asusd/
 	fi
