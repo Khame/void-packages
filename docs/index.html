@@ -22,11 +22,11 @@
 </ul>
 
 <h2>Usage</h2>
-<pre>sudo sh -c 'curl -sL https://khame.github.io/void-packages/Khame-void-repo.pub -o /var/db/xbps/keys/Khame-void-repo.pem'
-sudo sh -c 'echo "repository=https://khame.github.io/void-packages/" &gt; /etc/xbps.d/10-khame.conf'
-sudo xbps-install -S asusctl</pre>
+<pre>sudo sh -c 'echo "repository=https://khame.github.io/void-packages/" &gt; /etc/xbps.d/10-khame.conf'
+sudo xbps-install -S      # answer Y to import the repository key
+sudo xbps-install asusctl</pre>
 
 <h2>Signing key</h2>
-<p>Packages are RSA-signed with <a href="Khame-void-repo.pub">Khame-void-repo.pub</a>. Unsigned installation is not supported.</p>
+<p>Packages are RSA-signed. The key is embedded in the repository index and imported by <code>xbps</code> automatically; <a href="Khame-void-repo.pub">Khame-void-repo.pub</a> is published for manual verification. Unsigned installation is not supported.</p>
 </body>
 </html>
