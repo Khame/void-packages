@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Khame XBPS repository</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  code, pre { background: #f2f2f2; }
+  pre { padding: .75rem; overflow-x: auto; }
+  code { padding: .1rem .25rem; }
+</style>
+</head>
+<body>
+<h1>Khame XBPS repository</h1>
+<p>Signed <code>x86_64</code> packages for Void Linux, built for runit (no systemd).</p>
+
+<h2>Packages</h2>
+<ul>
+  <li><code>asusctl</code> — ASUS ROG control daemon, CLI tools and KDE Plasma widget.
+      Documentation: <a href="https://github.com/Khame/asusctl-void-linux">Khame/asusctl-void-linux</a></li>
+</ul>
+
+<h2>Usage</h2>
+<pre>sudo sh -c 'curl -sL https://khame.github.io/void-packages/Khame-void-repo.pub -o /var/db/xbps/keys/Khame-void-repo.pem'
+sudo sh -c 'echo "repository=https://khame.github.io/void-packages/" &gt; /etc/xbps.d/10-khame.conf'
+sudo xbps-install -S asusctl</pre>
+
+<h2>Signing key</h2>
+<p>Packages are RSA-signed with <a href="Khame-void-repo.pub">Khame-void-repo.pub</a>. Unsigned installation is not supported.</p>
+</body>
+</html>
