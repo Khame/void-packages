@@ -1,0 +1,101 @@
+# Template file for 'asusctl' — build bez systemd (runit) + plasmoid KDE
+pkgname=asusctl
+version=6.5.0.git20261024
+revision=1
+build_style=gnu-makefile
+make_build_target="all"
+# Instalujemy ręcznie w do_install, bo upstreamowy "make install" wrzuca
+# jednostki systemd, których tu nie chcemy.
+hostmakedepends="pkg-config rust cargo clang cmake gettext git"
+makedepends="eudev-libudev-devel dbus-devel pcre2-devel libxkbcommon-devel
+ libzstd-devel gtk+3-devel"
+depends="dbus eudev"
+# Plasmoid nie wymaga tych pakietów do zbudowania pakietu (to czyste QML,
+# ładowane w runtime przez plasmashell), ale bez nich widget się nie odpali
+# u użytkownika — stąd optdepends zamiast depends (część userów nie ma KDE).
+optdepends="plasma-workspace: KDE widget do sterowania asusd
+ kirigami2: KDE widget do sterowania asusd"
+short_desc="Control daemon, CLI and KDE widget for ASUS ROG laptops (no systemd)"
+maintainer="Khame <lukasz.linhard@gmail.com>"
+license="MPL-2.0"
+homepage="https://github.com/OpenGamingCollective/asusctl"
+# Use latest commit from main branch (includes per-key LED support for G713PI,
+# TUF A16 FA608WV support, TUF kbd_rgb_mode speed fix)
+distfiles="https://github.com/OpenGamingCollective/asusctl/archive/13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9.tar.gz"
+checksum=b202bb4ba0dfeb4ec46975ad69d9e39bec54441e9af833adfc0e24f32ead8a35
+
+post_patch() {
+	# Usuwamy callout systemctl z reguły udev — na runit go i tak nie ma,
+	# ale zostawiony wpis zaśmieca dziennik udevd błędami przy hotplugu.
+	sed -i '/systemctl.*asusd.service/d' data/asusd.rules || true
+}
+
+do_install() {
+	# ── binarki ──
+	vbin target/release/asusd
+	vbin target/release/asusctl
+	vbin target/release/asusd-user
+	vbin target/release/asus-shutdown
+	vbin target/release/rog-control-center
+
+	# ── udev ──
+	vinstall data/asusd.rules 644 usr/lib/udev/rules.d 99-asusd.rules
+	# rog-control-center installs notification icons and GPU mode icons
+	if [ -f data/icons/asus_notif_yellow.png ]; then
+		vmkdir usr/share/icons/hicolor/512x512/apps
+		vcopy data/icons/* usr/share/icons/hicolor/512x512/apps/
+	fi
+	if [ -f data/icons/scalable/gpu-compute.svg ]; then
+		vmkdir usr/share/icons/hicolor/scalable/status
+		vcopy data/icons/scalable/* usr/share/icons/hicolor/scalable/status/
+	fi
+	if [ -f data/90-asusd-nvidia-pm.rules ]; then
+		vinstall data/90-asusd-nvidia-pm.rules 644 usr/lib/udev/rules.d
+	fi
+
+	# ── rog-control-center desktop integration ──
+	if [ -f rog-control-center/data/org.opengamingcollective.rog-control-center.desktop ]; then
+		vinstall rog-control-center/data/org.opengamingcollective.rog-control-center.desktop 644 usr/share/applications
+	fi
+	if [ -f rog-control-center/data/org.opengamingcollective.rog-control-center.metainfo.xml ]; then
+		vinstall rog-control-center/data/org.opengamingcollective.rog-control-center.metainfo.xml 644 usr/share/metainfo
+	fi
+	if [ -f rog-control-center/data/rog-control-center.png ]; then
+		vmkdir usr/share/icons/hicolor/512x512/apps
+		vinstall rog-control-center/data/rog-control-center.png 644 usr/share/icons/hicolor/512x512/apps
+	fi
+
+	# ── dbus policy (działa niezależnie od initu) ──
+	vinstall data/asusd.conf 644 usr/share/dbus-1/system.d
+
+	# ── layouty klawiatur ──
+	vmkdir usr/share/asusd
+	vmkdir var/log/asusd
+	if [ -d rog-aura/data/layouts ]; then
+		vcopy rog-aura/data/layouts/* usr/share/asusd/
+	fi
+
+	# ── runit service zamiast systemd unit ──
+	vinstall ${FILESDIR}/asusd/run 755 etc/sv/asusd
+	vinstall ${FILESDIR}/asusd-log/run 755 etc/sv/asusd/log
+
+	# ── autostart XDG zamiast "systemd --user" ──
+	vinstall ${FILESDIR}/xdg-autostart/asusd-user.desktop 644 etc/xdg/autostart
+
+	# ── plasmoid KDE (widget: profile/limit ładowania/klawiatura/Aura) ──
+	# instalacja systemowa zamiast ~/.local/share — widoczny dla każdego
+	# użytkownika bez ręcznego kopiowania
+	vmkdir usr/share/plasma/plasmoids/org.voidlinux.plasma.asusctl
+	vcopy ${FILESDIR}/plasmoid/org.voidlinux.plasma.asusctl/* \
+		usr/share/plasma/plasmoids/org.voidlinux.plasma.asusctl/
+
+	vlicense LICENSE
+}
+
+post_install() {
+	# odpowiednik asus-shutdown.service — hook wołany w etapie 3 runit
+	# (patrz README-VOID.md co do wpisu w /etc/runit/3)
+	if [ -f data/asus-shutdown ]; then
+		vinstall data/asus-shutdown 755 usr/libexec/asusctl
+	fi
+}
