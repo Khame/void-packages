@@ -1,0 +1,5 @@
+#!/bin/sh
+# runit run-script dla asusd (zastępuje asusd.service z systemd)
+sv check dbus >/dev/null || exit 1
+exec 2>&1
+exec /usr/bin/asusd
