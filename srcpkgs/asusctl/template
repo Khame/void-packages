@@ -40,10 +40,9 @@ do_install() {
 		vcopy data/icons/scalable/* usr/share/icons/hicolor/scalable/status/
 	fi
 	# ── udev ──
-	# data/asusd.rules is not installed: it only contains
-	# TAG+="systemd" and ENV{SYSTEMD_WANTS}="asusd.service
-	# asus-shutdown.service". eudev ignores those entries, and asusd is
-	# started by runit instead.
+	# data/asusd.rules is not installed: it only sets TAG+="systemd" and
+	# ENV{SYSTEMD_WANTS}+="asusd.service asus-shutdown.service".
+	# eudev ignores those entries, and asusd is started by runit instead.
 
 	# ── rog-control-center desktop integration ──
 	if [ -f rog-control-center/data/org.opengamingcollective.rog-control-center.desktop ]; then
