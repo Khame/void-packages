@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Khame"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Panel do sterowania asusd/asusctl: profile zasilania, limit ładowania, podświetlenie klawiatury, tryby Aura. Wymaga zainstalowanego i uruchomionego asusd (runit) oraz asusctl w PATH.",
+        "Icon": "battery-060",
+        "Id": "org.voidlinux.plasma.asusctl",
+        "Name": "ASUS Control (asusctl)",
+        "ServiceTypes": [
+            "Plasma/Applet"
+        ],
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

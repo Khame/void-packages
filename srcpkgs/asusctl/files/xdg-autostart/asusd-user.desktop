@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=ASUS Control Daemon
+Comment=ASUS ROG control daemon
+Exec=/usr/bin/asusd-user
+X-GNOME-Autostart-enabled=true
