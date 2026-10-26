@@ -1,12 +1,12 @@
 # Template file for 'asusctl'
 pkgname=asusctl
 version=6.5.0.20261024
-revision=1
+revision=2
 _commit=13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9
 build_style=gnu-makefile
 make_build_target="all"
-# Instalujemy ręcznie w do_install, bo upstreamowy "make install" wrzuca
-# jednostki systemd, których tu nie chcemy.
+# Files are installed manually in do_install because upstream's "make install"
+# ships systemd units we do not want on a runit-based system.
 hostmakedepends="pkg-config rust cargo clang cmake gettext git"
 makedepends="eudev-libudev-devel dbus-devel pcre2-devel libxkbcommon-devel
  libzstd-devel gtk+3-devel"
@@ -21,15 +21,15 @@ distfiles="https://github.com/OpenGamingCollective/asusctl/archive/${_commit}.ta
 checksum=b202bb4ba0dfeb4ec46975ad69d9e39bec54441e9af833adfc0e24f32ead8a35
 
 do_install() {
-	# ── binarki ──
-	# asus-shutdown pomijamy: czeka na PrepareForShutdown z logind i woła
-	# systemctl, więc pod runit nigdy nie wykona swojej pracy.
+	# ── binaries ──
+	# asus-shutdown is skipped: it waits for logind's PrepareForShutdown and
+	# calls systemctl, so under runit it would never do its job.
 	vbin target/release/asusd
 	vbin target/release/asusctl
 	vbin target/release/asusd-user
 	vbin target/release/rog-control-center
 
-	# ── ikony ──
+	# ── icons ──
 	# rog-control-center installs notification icons and GPU mode icons
 	if [ -f data/icons/asus_notif_yellow.png ]; then
 		vmkdir usr/share/icons/hicolor/512x512/apps
@@ -40,10 +40,10 @@ do_install() {
 		vcopy data/icons/scalable/* usr/share/icons/hicolor/scalable/status/
 	fi
 	# ── udev ──
-	# data/asusd.rules nie jest instalowany: zawiera wyłącznie
-	# TAG+="systemd" i ENV{SYSTEMD_WANTS}="asusd.service
-	# asus-shutdown.service". eudev te wpisy ignoruje, a asusd startuje
-	# z runit.
+	# data/asusd.rules is not installed: it only contains
+	# TAG+="systemd" and ENV{SYSTEMD_WANTS}="asusd.service
+	# asus-shutdown.service". eudev ignores those entries, and asusd is
+	# started by runit instead.
 
 	# ── rog-control-center desktop integration ──
 	if [ -f rog-control-center/data/org.opengamingcollective.rog-control-center.desktop ]; then
@@ -57,26 +57,26 @@ do_install() {
 		vinstall rog-control-center/data/rog-control-center.png 644 usr/share/icons/hicolor/512x512/apps
 	fi
 
-	# ── dbus policy (działa niezależnie od initu) ──
+	# ── D-Bus policy (independent of the init system) ──
 	vinstall data/asusd.conf 644 usr/share/dbus-1/system.d
 
-	# ── layouty klawiatur ──
+	# ── keyboard layouts ──
 	vmkdir usr/share/asusd
 	if [ -d rog-aura/data/layouts ]; then
 		vcopy rog-aura/data/layouts/* usr/share/asusd/
 	fi
 
-	# ── runit service zamiast systemd unit ──
+	# ── runit service instead of systemd units ──
 	vinstall ${FILESDIR}/asusd/run 755 etc/sv/asusd
 	vinstall ${FILESDIR}/asusd-log/run 755 etc/sv/asusd/log
 
-	# ── autostart XDG zamiast "systemd --user" ──
+	# ── XDG autostart instead of "systemd --user" ──
 	vinstall ${FILESDIR}/xdg-autostart/asusd-user.desktop 644 etc/xdg/autostart
 
-	# ── plasmoid KDE (widget: profile/limit ładowania/klawiatura/Aura) ──
-	# instalacja systemowa zamiast ~/.local/share — widoczny dla każdego
-	# użytkownika bez ręcznego kopiowania; wymagania runtime opisuje
-	# INSTALL.msg (xbps-src nie zna optdepends)
+	# ── KDE plasmoid (profile / charge limit / keyboard / Aura widget) ──
+	# System-wide install instead of ~/.local/share, so it is visible to
+	# every user without manual copying; runtime requirements are listed in
+	# INSTALL.msg (xbps-src has no optdepends).
 	vmkdir usr/share/plasma/plasmoids/org.voidlinux.plasma.asusctl
 	vcopy ${FILESDIR}/plasmoid/org.voidlinux.plasma.asusctl/* \
 		usr/share/plasma/plasmoids/org.voidlinux.plasma.asusctl/
