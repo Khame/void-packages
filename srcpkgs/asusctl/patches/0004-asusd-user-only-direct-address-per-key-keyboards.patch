@@ -1,0 +1,72 @@
+# Only run asusd-user's direct addressing loop for per-key keyboards.
+#
+# asusd-user always created AuraProxyBlocking for the object path
+# /xyz/ljones/Aura and started a 30 Hz packet loop. On plain and zoned Aura
+# keyboards (advanced_type None/Zoned) asusd applies the effects itself, that
+# object does not exist, and every session start logged:
+#
+#   ERROR: Aura direct addressing error: org.freedesktop.DBus.Error.UnknownObject:
+#          Unknown object '/xyz/ljones/Aura'
+#
+# asusd-user only logs to stdout, so this went to /dev/null and was invisible
+# until the autostart entry started keeping the log.
+#
+# Restore the guard that upstream left commented out, based on the detected
+# keyboard type rather than a config flag that defaults to Some(...).
+#
+# Depends on 0002 (same file, main() restructure).
+# Upstream status at 13cdaa9 (2026-10-28): not fixed, the guard is still
+# commented out.
+--- a/asusd-user/src/daemon.rs
++++ b/asusd-user/src/daemon.rs
+--- a/asusd-user/src/daemon.rs
++++ b/asusd-user/src/daemon.rs
+@@ -9,7 +9,7 @@
+ use log::{error, info};
+ use rog_anime::usb::get_anime_type;
+ use rog_aura::aura_detection::LedSupportData;
+-use rog_aura::keyboard::KeyLayout;
++use rog_aura::keyboard::{AdvancedAuraType, KeyLayout};
+ use rog_dbus::zbus_anime::AnimeProxyBlocking;
+ use rog_dbus::zbus_aura::AuraProxyBlocking;
+ use rog_dbus::{DBUS_NAME, list_iface_blocking};
+@@ -93,21 +93,27 @@
+         None
+     };
+ 
+-    // if supported.keyboard_led.per_key_led_mode {
+-    let aura_parts = if let Some(cfg) = config.active_aura {
+-        let aura_config = ConfigAura::new().set_name(cfg).load();
+-        let led_support = LedSupportData::get_data("");
+-        let layout = KeyLayout::find_layout(led_support, PathBuf::from(DATA_DIR))
+-            .map_err(|e| {
+-                error!("{BOARD_NAME}, {e}");
+-            })
+-            .unwrap_or_else(|_| KeyLayout::default_layout());
+-        let aura_proxy_blocking = AuraProxyBlocking::new(&conn)?;
+-        Some((aura_config, layout, aura_proxy_blocking))
++    // Direct addressing is only needed for keyboards with per-key control. On
++    // plain and zoned Aura keyboards asusd applies the effects itself, and the
++    // proxy below points at an object path that does not exist there, which
++    // logged a spurious "Aura direct addressing error" on every session start.
++    let led_support = LedSupportData::get_data("");
++    let aura_parts = if led_support.advanced_type == AdvancedAuraType::PerKey {
++        if let Some(cfg) = config.active_aura {
++            let aura_config = ConfigAura::new().set_name(cfg).load();
++            let layout = KeyLayout::find_layout(led_support, PathBuf::from(DATA_DIR))
++                .map_err(|e| {
++                    error!("{BOARD_NAME}, {e}");
++                })
++                .unwrap_or_else(|_| KeyLayout::default_layout());
++            let aura_proxy_blocking = AuraProxyBlocking::new(&conn)?;
++            Some((aura_config, layout, aura_proxy_blocking))
++        } else {
++            None
++        }
+     } else {
+         None
+     };
+-    // }
+ 
+     let runtime = tokio::runtime::Builder::new_current_thread()
+         .enable_all()

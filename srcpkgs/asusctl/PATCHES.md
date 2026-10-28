@@ -1,6 +1,6 @@
 # Local patches for asusctl
 
-This package carries two local patches against upstream commit
+This package carries four local patches against upstream commit
 [`13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9`](https://github.com/OpenGamingCollective/asusctl/tree/13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9).
 They are kept here (not sent upstream) so that this Void package behaves
 correctly on the maintainer's laptop. Re-check them on every version bump.
@@ -112,6 +112,36 @@ busctl --system get-property xyz.ljones.Asusd /xyz/ljones/aura/*_*_* \
 `update_config()` call is still in the `sleeping` branch and still does a bare
 `read()`. This patch depends on patch 1, which registers the sleep handler.
 
+## 4. `0004-asusd-user-only-direct-address-per-key-keyboards.patch`
+
+**Symptom:** `asusd-user` logged, on every session start:
+
+```
+ERROR: Aura direct addressing error: org.freedesktop.DBus.Error.UnknownObject:
+       Unknown object '/xyz/ljones/Aura'
+```
+
+It was invisible while the autostart entry sent stdout to `/dev/null`; it
+became visible once `asusd-user-session` started keeping the log.
+
+**Cause:** `asusd-user` always created an `AuraProxyBlocking` for the legacy
+object path `/xyz/ljones/Aura` and ran a 30 Hz direct-addressing loop, for every
+keyboard. That object only exists for per-key keyboards; on plain and zoned Aura
+keyboards `asusd` applies the effects itself, so the call fails and the loop
+exits. Upstream still has the intended guard commented out
+(`// if supported.keyboard_led.per_key_led_mode {`).
+
+**Fix:** restore the guard, based on the detected keyboard type
+(`LedSupportData::advanced_type == AdvancedAuraType::PerKey`) instead of the
+user config, which defaults to `Some(...)`.
+
+**Verification:** after a new login there is no `Aura direct addressing error`
+in `~/.local/state/asusd/asusd-user.log`, and normal (non-per-key) Aura
+control still works.
+
+**Upstream status:** not fixed as of `13cdaa9` (checked 2026-10-28); the guard
+is still commented out.
+
 ## Live verification (2026-10-28, revision 6)
 
 Task: suspend/hibernate with all three patches, then resume and drive the GUI.
@@ -135,6 +165,13 @@ Before revision 6 the same test left the keyboard dark and the Aura properties
 reported no zones, so all three patches are required on this hardware
 (G513Q / Aura type 1866, Void Linux, runit + elogind, no systemd).
 
+Revision 7 additionally ships the layouts in `/usr/share/rog-gui/layouts/`, the
+`aura_support.ron` database and a logging `asusd-user-session` wrapper. After
+installing it and restarting the session daemon, `asusd-user.log` shows
+`Loaded default LED support data from /usr/share/asusd/aura_support.ron` and
+`Matched to G513Q` with no `IO Error` and no `Aura direct addressing error`
+(patch 4); `asusctl leds get` still reports `High`.
+
 ## Known upstream behaviour, intentionally not patched
 
 After resume, elogind delivers `PrepareForSleep(false)` more than once, so with
@@ -145,33 +182,13 @@ one subscriber, but the wake signal was still delivered twice. The handler is
 idempotent — it applies the same brightness/mode twice — so this is harmless.
 Not patched and not reported upstream.
 
-## Checklist for a new upstream version
+## Re-checking against a new upstream release
 
-1. Fetch the new commit/tarball and look at the patched files:
-   - `asusd/src/aura_laptop/trait_impls.rs` — search for `create_tasks` and
-     `TODO: skip this until we keep handles`; also check whether the
-     `sleeping` branch still calls `update_config()`.
-   - `asusd-user/src/daemon.rs` — check whether `main` still uses
-     `#[tokio::main]` and whether blocking proxies are created inside it.
-2. If upstream now calls `create_tasks()` (or an equivalent sleep handler is
-   registered some other way), delete `0001-…patch` and verify after resume:
-   the log must contain `CtrlKbdLedTask reloading brightness and modes`.
-   Patch `0003` depends on `0001`; if `0001` is dropped, check whether the
-   `update_config()`-on-sleep problem still exists before dropping `0003`.
-3. If upstream reworked `asusd-user` so blocking proxies are created outside
-   the runtime (plain `fn main` + explicit runtime, or async zbus proxies),
-   delete `0002-…patch` and verify `asusd-user` starts without panicking.
-4. If saving brightness on sleep no longer persists a transient zero (e.g.
-   the zero check landed upstream, or brightness comes from the config rather
-   than sysfs), delete `0003-…patch` and verify: set `Med`, hibernate, resume;
-   the config must still say `Med`, the keyboard must light up, and after the
-   resume `SupportedBasicZones` must still list zones / the GUI must still set
-   colours. Removing only half of patch 3 is not possible: the state-loss and
-   brightness issues live in the same function.
-5. Remove the `patches/` entry only after a successful local build **and** a
-   live resume/login test; a clean compile does not prove the handler runs.
-6. Bump `revision` for any patch change, and update this file (upstream status
-   + checked commit/date).
+Look at `asusd/src/aura_laptop/trait_impls.rs` (is `create_tasks()` called? does
+the `sleeping` branch still call `update_config()`?) and
+`asusd-user/src/daemon.rs` (is `main` still `#[tokio::main]`? is the per-key
+guard still commented out?). Drop a patch only after a local build **and** a
+live resume/login test — a clean compile does not prove the handler runs.
 
-Current package revision with these patches: `revision=6`, upstream commit
+Current package revision with these patches: `revision=7`, upstream commit
 `13cdaa9`.

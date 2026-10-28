@@ -4,7 +4,7 @@ version=6.5.0.20261024
 # Local patches (Aura resume restore + brightness persistence, asusd-user
 # runtime panic) are documented in PATCHES.md, including how to check whether a
 # newer upstream commit makes them unnecessary.
-revision=6
+revision=7
 _commit=13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9
 build_style=gnu-makefile
 make_build_target="all"
@@ -15,7 +15,7 @@ makedepends="eudev-libudev-devel dbus-devel pcre2-devel libxkbcommon-devel
  libzstd-devel gtk+3-devel"
 depends="dbus eudev"
 short_desc="Daemon, CLI and KDE Plasma widget for ASUS ROG laptops"
-maintainer="Khame <lukasz.linhard@gmail.com>"
+maintainer="Khame <24250040+Khame@users.noreply.github.com>"
 license="MPL-2.0"
 homepage="https://github.com/OpenGamingCollective/asusctl"
 # Latest main-branch commit: per-key LED support for G713PI, TUF A16 FA608WV
@@ -62,10 +62,18 @@ do_install() {
 	# ── D-Bus policy (independent of the init system) ──
 	vinstall data/asusd.conf 644 usr/share/dbus-1/system.d
 
-	# ── keyboard layouts ──
+	# ── Aura support data and keyboard layouts ──
+	# Upstream looks for the LED support database at
+	# /usr/share/asusd/aura_support.ron and for keyboard layouts at
+	# /usr/share/rog-gui/layouts/ (asusd-user, direct addressing). Without
+	# the files asusd falls back to the embedded copy, but asusd-user fails
+	# to find a layout for the detected model.
 	vmkdir usr/share/asusd
+	vinstall rog-aura/data/aura_support.ron 644 usr/share/asusd
 	if [ -d rog-aura/data/layouts ]; then
 		vcopy rog-aura/data/layouts/* usr/share/asusd/
+		vmkdir usr/share/rog-gui/layouts
+		vcopy rog-aura/data/layouts/* usr/share/rog-gui/layouts/
 	fi
 
 	# ── runit service instead of systemd units ──
@@ -74,6 +82,7 @@ do_install() {
 
 	# ── XDG autostart instead of "systemd --user" ──
 	vinstall ${FILESDIR}/xdg-autostart/asusd-user.desktop 644 etc/xdg/autostart
+	vinstall ${FILESDIR}/asusd-user-session 755 usr/bin
 
 	# ── KDE plasmoid (profile / charge limit / keyboard / Aura widget) ──
 	# System-wide install instead of ~/.local/share, so it is visible to

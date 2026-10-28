@@ -1,0 +1,8 @@
+#!/bin/sh
+# asusd-user logs to stdout, but an XDG autostart entry has no terminal and a
+# bare Exec would send that output to /dev/null. Keep it in the user's state
+# directory so layout and D-Bus errors are diagnosable.
+set -eu
+dir="${XDG_STATE_HOME:-$HOME/.local/state}/asusd"
+mkdir -p "$dir"
+exec /usr/bin/asusd-user >>"$dir/asusd-user.log" 2>&1
