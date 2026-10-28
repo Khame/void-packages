@@ -1,0 +1,41 @@
+# Keep the AuraZbus handle alive and call create_tasks() after the object is
+# added to the D-Bus object server. Without this the logind PrepareForSleep
+# handler is never registered and the keyboard backlight stays dark after
+# resume (brightness/mode are not restored).
+#
+# Upstream status at 13cdaa9 (2026-10-28): not fixed, there is still a TODO
+# above the commented-out create_tasks() call. See PATCHES.md before updating.
+--- a/asusd/src/aura_laptop/trait_impls.rs
++++ b/asusd/src/aura_laptop/trait_impls.rs
+@@ -30,8 +30,9 @@
+         // _signal_ctx: SignalEmitter<'static>,
+         path: OwnedObjectPath,
+     ) -> Result<(), RogError> {
+-        // let task = zbus.clone();
+-        // let signal_ctx = signal_ctx.clone();
++        // Keep a handle so the sys-event tasks can be registered after `self`
++        // is moved into the object server.
++        let task = self.clone();
+         self.reload()
+             .await
+             .unwrap_or_else(|err| warn!("Controller error: {}", err));
+@@ -41,8 +42,17 @@
+             .await
+             .map_err(|e| error!("Couldn't add server at path: {path}, {e:?}"))
+             .ok();
+-        // TODO: skip this until we keep handles to tasks so they can be killed
+-        // task.create_tasks(signal_ctx).await
++        // Register the logind PrepareForSleep handler implemented in
++        // `create_tasks`. Without it the keyboard brightness and Aura effect
++        // are never restored after resume.
++        match Self::signal_context(connection) {
++            Ok(signal_ctx) => {
++                if let Err(e) = task.create_tasks(signal_ctx).await {
++                    warn!("AuraZbus: failed to create tasks: {e}");
++                }
++            }
++            Err(e) => warn!("AuraZbus: failed to create signal context: {e}"),
++        }
+         Ok(())
+     }
+ }

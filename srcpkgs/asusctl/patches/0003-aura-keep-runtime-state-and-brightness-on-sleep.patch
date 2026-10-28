@@ -1,0 +1,50 @@
+# Keep the Aura runtime state and the user's brightness across sleep.
+#
+# 1. The sleep handler calls Aura::update_config(). It does `config.read()`,
+#    which replaces the whole struct with the on-disk contents, but the
+#    #[serde(skip)] fields (led_type, support_data, per_key_mode_active) are
+#    not serialised and get reset to their defaults. With an empty
+#    support_data every later SetLedModeData is rejected with "The Aura effect
+#    is not supported" and the supported zones/power zones report as empty -
+#    i.e. rog-control-center can no longer change colour, mode or brightness
+#    until asusd is restarted. Preserve those fields across the reload.
+#
+# 2. KDE PowerDevil and/or the firmware turn the keyboard LED off while the
+#    screen blanks and the system prepares to sleep. update_config() saved that
+#    transient zero over the user's chosen brightness, so the resume handler
+#    faithfully restored "Off" and the keyboard stayed dark. Ignore a zero
+#    reading when saving; a user-chosen Off is already in the config (written
+#    by the D-Bus brightness setter).
+#
+# Depends on 0001 (which registers this sleep handler).
+# Upstream status at 13cdaa9 (2026-10-28): not fixed. See PATCHES.md.
+--- a/asusd/src/aura_laptop/mod.rs
++++ b/asusd/src/aura_laptop/mod.rs
+@@ -41,8 +41,26 @@
+         } else {
+             config.brightness.into()
+         };
++        // `StdConfig::read()` replaces the whole struct with what is on disk,
++        // but the `#[serde(skip)]` fields (`led_type`, `support_data`,
++        // `per_key_mode_active`) are not serialised and would be reset to
++        // their defaults. An empty `support_data` makes every later
++        // `SetLedModeData` fail with "The Aura effect is not supported" and
++        // wipes the supported zones/power zones, so keep them across the
++        // reload.
++        let led_type = config.led_type;
++        let support_data = config.support_data.clone();
++        let per_key_mode_active = config.per_key_mode_active;
+         config.read();
+-        config.brightness = bright.into();
++        config.led_type = led_type;
++        config.support_data = support_data;
++        config.per_key_mode_active = per_key_mode_active;
++        // KDE PowerDevil or the firmware may turn the keyboard LED off while
++        // the screen blanks and the system prepares to sleep. Do not persist
++        // that transient Off over the user's chosen brightness.
++        if bright != 0 {
++            config.brightness = bright.into();
++        }
+         config.write();
+         Ok(())
+     }
