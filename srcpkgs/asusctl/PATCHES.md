@@ -112,6 +112,29 @@ busctl --system get-property xyz.ljones.Asusd /xyz/ljones/aura/*_*_* \
 `update_config()` call is still in the `sleeping` branch and still does a bare
 `read()`. This patch depends on patch 1, which registers the sleep handler.
 
+## Live verification (2026-10-28, revision 6)
+
+Task: suspend/hibernate with all three patches, then resume and drive the GUI.
+
+Result — pass:
+
+- `PrepareForSleep(true)` 20:11:52 UTC → `PrepareForSleep(false)` 20:13:13 UTC,
+  same boot id (real resume, not a fresh boot).
+- `/var/log/asusd/current` contains two `CtrlKbdLedTask reloading brightness
+  and modes` lines after the wake (patch 1).
+- `/etc/asusd/aura_1866.ron` still had `brightness: High`; sysfs
+  `asus::kbd_backlight` = 3 and the keyboard was lit (patch 3, part 2).
+- `SupportedBasicZones` returned `au 4 1 2 3 4` and `SupportedPowerZones`
+  `au 2 1 2` after the resume; `SetLedModeData` succeeded and
+  `rog-control-center` could change colour, mode and brightness (patch 3,
+  part 1).
+- `asusd-user` runs without the `Cannot start a runtime from within a runtime`
+  panic (patch 2).
+
+Before revision 6 the same test left the keyboard dark and the Aura properties
+reported no zones, so all three patches are required on this hardware
+(G513Q / Aura type 1866, Void Linux, runit + elogind, no systemd).
+
 ## Known upstream behaviour, intentionally not patched
 
 After resume, elogind delivers `PrepareForSleep(false)` more than once, so with
