@@ -1,0 +1,24 @@
+--- a/asusd/src/lib.rs
++++ b/asusd/src/lib.rs
+@@ -20,0 +21 @@
++use std::time::{Duration, Instant};
+@@ -438,0 +440,6 @@
++                        // logind can deliver the same transition more than once.
++                        // Each subscriber listens on its own connection, so every
++                        // repeated signal would run the handler again. Ignore a
++                        // value identical to the previous one if it arrives
++                        // immediately after it.
++                        let mut last: Option<(bool, Instant)> = None;
+@@ -441,0 +449,12 @@
++                                let repeated = last.is_some_and(|(prev, when)| {
++                                    prev == args.start
++                                        && when.elapsed() < Duration::from_secs(2)
++                                });
++                                if repeated {
++                                    debug!(
++                                        "Ignoring repeated on_prepare_for_sleep({})",
++                                        args.start
++                                    );
++                                    continue;
++                                }
++                                last = Some((args.start, Instant::now()));

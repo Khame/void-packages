@@ -1,6 +1,6 @@
 # Local patches for asusctl
 
-This package carries five local patches against upstream commit
+This package carries six local patches against upstream commit
 [`13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9`](https://github.com/OpenGamingCollective/asusctl/tree/13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9).
 They stay here, not upstream, because they only fix what breaks on my laptop.
 Check them again on every version bump.
@@ -168,6 +168,44 @@ Check it by restarting `asusd` or rebooting with `brightness: High` in
 Upstream still ends `reload()` after `write_current_config_mode()` at `13cdaa9`
 (checked 2026-10-29).
 
+## 6. One wake reloaded the keyboard twice
+
+`0006-dedupe-logind-sleep-signals.patch`
+
+After patch 1 the backlight came back after every resume, but the log showed the
+same work twice:
+
+```
+[DEBUG asusd] Doing on_prepare_for_sleep(false)
+[INFO  asusd::aura_laptop::trait_impls] CtrlKbdLedTask reloading brightness and modes
+[DEBUG asusd] Doing on_prepare_for_sleep(false)
+[INFO  asusd::aura_laptop::trait_impls] CtrlKbdLedTask reloading brightness and modes
+```
+
+elogind delivers `PrepareForSleep(false)` more than once for one resume. Every
+subscriber opens its own connection in `create_sys_event_tasks()`, so each
+subscriber sees the repeat and runs its handler again. The handler writes the
+same brightness and mode both times, so nothing was visibly broken, but the
+second pass is wasted work on every wake.
+
+The patch remembers the last value and when it arrived, inside
+`asusd/src/lib.rs`. A signal identical to the previous one within 2 seconds is
+logged as `Ignoring repeated on_prepare_for_sleep(...)` and skipped. A different
+value always goes through, so `true` followed by `false` is never swallowed and
+a real resume still reaches the handler.
+
+Check it after a suspend and resume:
+
+```sh
+grep -c 'Ignoring repeated on_prepare_for_sleep' /var/log/asusd/current
+grep 'reloading brightness and modes' /var/log/asusd/current | tail -3
+```
+
+There should be one `Ignoring repeated` line per subscriber and a single reload
+for the wake.
+
+Upstream has no de-duplication at `13cdaa9` (checked 2026-10-29).
+
 ## What the tests showed
 
 On 2026-10-28 I suspended and hibernated with revision 6, resumed, then used the
@@ -194,22 +232,38 @@ installing it and restarting the session daemon, `asusd-user.log` showed
 `Matched to G513Q`, with no `IO Error` and no `Aura direct addressing error`
 (patch 4). `asusctl leds get` still reported `High`.
 
-## Upstream behaviour I left alone
+Revision 8 was checked on 2026-10-29 by writing 0 to
+`/sys/class/leds/asus::kbd_backlight/brightness` and restarting `asusd`. The
+value came back to 3, `asusctl leds get` printed `High`, and the log had a
+`reloading brightness` line with no errors (patch 5).
 
-elogind sends `PrepareForSleep(false)` more than once after a resume. With both
-the platform and the Aura subscribers registered, the log shows four
-`Doing on_prepare_for_sleep(false)` lines and patch 1's handler runs twice. Even
-before patch 1, when there was one subscriber, the wake signal arrived twice.
-The handler applies the same brightness and mode both times, so it is harmless.
-I did not patch it and did not report it.
+Revision 9 was checked on the same day with a suspend and resume. Two
+`PrepareForSleep(false)` signals arrived at 11:18:15 UTC. The log has two
+`Doing on_prepare_for_sleep(false)` lines, one per subscriber, then two
+`Ignoring repeated on_prepare_for_sleep(false)` lines. The Aura handler reloaded
+the keyboard once, not twice (patch 6). It came back lit and `asusctl leds get`
+printed `High`.
+
+Note that `busctl emit` cannot be used to test this: zbus matches the signal
+sender, and a signal from another connection does not reach the handler.
+
+## Where the duplicate signals come from
+
+elogind sends `PrepareForSleep(false)` more than once for a single resume. Even
+before patch 1, when only one subscriber existed, the wake signal arrived twice.
+Patch 1 made that visible because the Aura handler now runs at all: four
+`Doing on_prepare_for_sleep(false)` lines, two per subscriber, and two reloads.
+Patch 6 keeps the first pass and drops the repeat. Nothing was sent upstream.
 
 ## Checking a new upstream release
 
 Start with `asusd/src/aura_laptop/trait_impls.rs`: is `create_tasks()` called,
 and does the `sleeping` branch still call `update_config()`? Then
 `asusd-user/src/daemon.rs`: is `main` still `#[tokio::main]`, and is the per-key
-guard still commented out? Drop a patch only after a local build and a real
-resume or login. A clean compile does not prove the handler runs.
+guard still commented out? Then `asusd/src/lib.rs`: does
+`create_sys_event_tasks()` still forward every `PrepareForSleep` it receives?
+Drop a patch only after a local build and a real resume or login. A clean compile
+does not prove the handler runs.
 
-Current package revision with these patches: `revision=8`, upstream commit
+Current package revision with these patches: `revision=9`, upstream commit
 `13cdaa9`.
