@@ -1,10 +1,10 @@
 # Template file for 'asusctl'
 pkgname=asusctl
 version=6.5.0.20261024
-# Local patches (Aura resume restore + brightness persistence, asusd-user
-# runtime panic) are documented in PATCHES.md, including how to check whether a
-# newer upstream commit makes them unnecessary.
-revision=7
+revision=8
+# Five local patches (Aura sleep handler, asusd-user runtime, runtime state on
+# sleep, per-key guard, brightness at startup) are documented in PATCHES.md,
+# including how to check whether a newer upstream commit makes them unnecessary.
 _commit=13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9
 build_style=gnu-makefile
 make_build_target="all"
@@ -15,7 +15,7 @@ makedepends="eudev-libudev-devel dbus-devel pcre2-devel libxkbcommon-devel
  libzstd-devel gtk+3-devel"
 depends="dbus eudev"
 short_desc="Daemon, CLI and KDE Plasma widget for ASUS ROG laptops"
-maintainer="Khame <24250040+Khame@users.noreply.github.com>"
+maintainer="Khame <khame.dev@protonmail.com>"
 license="MPL-2.0"
 homepage="https://github.com/OpenGamingCollective/asusctl"
 # Latest main-branch commit: per-key LED support for G713PI, TUF A16 FA608WV

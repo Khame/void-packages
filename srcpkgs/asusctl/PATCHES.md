@@ -1,70 +1,74 @@
 # Local patches for asusctl
 
-This package carries four local patches against upstream commit
+This package carries five local patches against upstream commit
 [`13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9`](https://github.com/OpenGamingCollective/asusctl/tree/13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9).
-They are kept here (not sent upstream) so that this Void package behaves
-correctly on the maintainer's laptop. Re-check them on every version bump.
+They stay here, not upstream, because they only fix what breaks on my laptop.
+Check them again on every version bump.
 
-## 1. `0001-aura-register-logind-sleep-handler.patch`
+## 1. The sleep handler was never registered
 
-**Symptom:** after suspend/resume the ASUS ROG keyboard backlight stayed dark
-until reboot. `asusctl leds set …` worked, but resume never restored the
-configured brightness/mode.
+`0001-aura-register-logind-sleep-handler.patch`
 
-**Cause:** `AuraZbus::start_tasks()` in `asusd/src/aura_laptop/trait_impls.rs`
-never called `create_tasks()`. Upstream had commented it out with a `TODO`
-because the handle to the tasks was dropped when `self` was moved into the
-D-Bus object server. As a result the logind `PrepareForSleep` handler was never
-registered in `asusd` — the log contained no
-`CtrlKbdLedTask reloading brightness and modes` line after resume.
+After suspend or resume the keyboard backlight stayed dark until reboot.
+`asusctl leds set` worked, but waking up never restored the brightness or the
+mode.
 
-**Fix:** keep a clone of the controller alive, call `create_tasks()` after
-`add_to_server()`, and let the tasks be registered.
+`AuraZbus::start_tasks()` in `asusd/src/aura_laptop/trait_impls.rs` never called
+`create_tasks()`. Upstream had it commented out with a TODO, because the handle
+to the tasks died when `self` was moved into the D-Bus object server. The logind
+`PrepareForSleep` handler was therefore never registered, and the log had no
+`CtrlKbdLedTask reloading brightness and modes` line after a resume.
 
-**Verification after resume** (`/var/log/asusd/current`):
+The patch keeps a clone of the controller alive and calls `create_tasks()` after
+`add_to_server()`.
+
+To check it after a resume:
 
 ```sh
 grep 'CtrlKbdLedTask reloading brightness and modes' /var/log/asusd/current | tail
 asusctl leds get   # must match /etc/asusd/aura_*.ron
 ```
 
-**Upstream status:** not fixed as of `13cdaa9` (checked 2026-10-28); the `TODO`
-and the commented-out call are still present.
+Upstream still has the TODO and the commented-out call at `13cdaa9`
+(checked 2026-10-28).
 
-## 2. `0002-asusd-user-create-runtime-after-blocking-setup.patch`
+## 2. asusd-user panicked at login
 
-**Symptom:** `asusd-user` exited immediately at login with:
+`0002-asusd-user-create-runtime-after-blocking-setup.patch`
+
+`asusd-user` exited right away with:
 
 ```
 thread 'main' panicked at …:
 Cannot start a runtime from within a runtime
 ```
 
-**Cause:** `#[tokio::main]` entered the Tokio runtime before the zbus
-**blocking** proxies (`AnimeProxyBlocking::new`, `AuraProxyBlocking::new`)
-were created. zbus blocking objects call `Runtime::block_on` internally, and
-Tokio panics when that happens while a runtime is already running on the same
-thread.
+`#[tokio::main]` entered the Tokio runtime before the zbus blocking proxies
+(`AnimeProxyBlocking::new`, `AuraProxyBlocking::new`) were built. Those call
+`Runtime::block_on` internally, and Tokio panics when that happens on a thread
+that already runs a runtime.
 
-**Fix:** turn `main` into a plain `fn main()`, do every blocking setup step
-first, then build a `current_thread` Tokio runtime and run the async server
-tasks inside `block_on()`. No behaviour change other than not panicking.
+`main` is now a plain `fn main()`. All blocking setup happens first, then a
+`current_thread` runtime is built and the async server tasks run inside
+`block_on()`. Nothing else changed.
 
-**Verification:**
+Check:
 
 ```sh
-asusd-user --help        # must not panic (it may exit 0 or print usage)
-pgrep -a asusd-user      # should stay alive when started from the session
+asusd-user --help        # must not panic
+pgrep -a asusd-user      # stays alive when the session starts it
 ```
 
-## 3. `0003-aura-keep-runtime-state-and-brightness-on-sleep.patch`
+## 3. Sleep wiped runtime state and the chosen brightness
 
-Two defects in the same function, `Aura::update_config()`, which patch 1 now
-calls on every sleep/wake.
+`0003-aura-keep-runtime-state-and-brightness-on-sleep.patch`
 
-**Symptom A — the GUI cannot change anything after a resume:**
-`rog-control-center` reports "LED mode failed" for every colour/mode change and
-brightness changes do not stick. D-Bus confirms the rejection:
+Two bugs in one function, `Aura::update_config()`, which patch 1 made run on
+every sleep and wake.
+
+First: after a resume the GUI could not change anything. `rog-control-center`
+reported "LED mode failed" for every colour or mode change and brightness would
+not stick. D-Bus showed the rejection:
 
 ```sh
 busctl --system set-property xyz.ljones.Asusd /xyz/ljones/aura/*_*_* \
@@ -72,123 +76,140 @@ busctl --system set-property xyz.ljones.Asusd /xyz/ljones/aura/*_*_* \
 # The Aura effect is not supported: AuraEffect { mode: Static, zone: None, ... }
 ```
 
-`SupportedBasicZones` / `SupportedPowerZones` also read back empty even though
-the model's support data has zones.
+`SupportedBasicZones` and `SupportedPowerZones` also came back empty, even
+though the support data for this model has zones. The cause is
+`StdConfig::read()`, which does `*self = ron::from_str(file)`. The
+`#[serde(skip)]` fields (`led_type`, `support_data`, `per_key_mode_active`) are
+not in the file and get reset to their defaults. With empty `support_data`,
+`set_led_mode_data()` rejects every effect and the zone lists come back empty.
+Restarting `asusd` fixed it, which is why the GUI worked until the first
+suspend. The patch saves those three fields before `read()` and puts them back
+afterwards.
 
-**Cause A:** `update_config()` calls `StdConfig::read()`, which does
-`*self = ron::from_str(file)`. The `#[serde(skip)]` fields (`led_type`,
-`support_data`, `per_key_mode_active`) are not in the file, so they are reset
-to their defaults. With empty `support_data`, `set_led_mode_data()` rejects
-every effect as unsupported and the zone lists come back empty. A restart of
-`asusd` restored them — which is why the GUI worked until the first suspend.
+Second: the keyboard was dark after suspend or hibernate, and
+`/etc/asusd/aura_*.ron` said `brightness: Off` even though I never chose Off.
+The same `update_config()` wrote the current sysfs value of
+`asus::kbd_backlight`, and KDE PowerDevil (or the firmware) turns that LED off
+while the screen blanks. asusd saved the transient Off, and the resume handler
+then restored it faithfully. The patch ignores a zero reading when saving. A
+real Off is already in the config from the D-Bus brightness setter, and non-zero
+changes made by power management are still saved.
 
-**Fix A:** snapshot `led_type`, `support_data` and `per_key_mode_active` before
-`read()` and restore them afterwards.
-
-**Symptom B — keyboard dark after suspend/hibernate:** `/etc/asusd/aura_*.ron`
-contained `brightness: Off` although the user never chose Off.
-
-**Cause B:** the same `update_config()` saved the current sysfs value of
-`asus::kbd_backlight`. KDE PowerDevil (and/or the firmware) turns that LED off
-while the screen blanks / prepares to sleep, so asusd persisted the transient
-`Off`, and the resume handler correctly restored `Off`.
-
-**Fix B:** ignore a zero reading when saving. A user-chosen `Off` is already in
-the config (written by the D-Bus brightness setter); non-zero changes made
-through desktop power management are still persisted.
-
-**Verification:**
+Check:
 
 ```sh
 asusctl leds set med
 grep brightness /etc/asusd/aura_*.ron          # must stay Med, not Off
 grep 'CtrlKbdLedTask reloading brightness and modes' /var/log/asusd/current | tail
-# after a resume, the GUI must still change colour/mode/brightness
+# after a resume the GUI must still change colour, mode and brightness
 busctl --system get-property xyz.ljones.Asusd /xyz/ljones/aura/*_*_* \
   xyz.ljones.Aura SupportedBasicZones          # must not be empty
 ```
 
-**Upstream status:** not fixed as of `13cdaa9` (checked 2026-10-28); the
-`update_config()` call is still in the `sleeping` branch and still does a bare
-`read()`. This patch depends on patch 1, which registers the sleep handler.
+Upstream still calls `update_config()` from the `sleeping` branch and still does
+a bare `read()` at `13cdaa9` (checked 2026-10-28). This patch needs patch 1,
+because that is what registers the handler.
 
-## 4. `0004-asusd-user-only-direct-address-per-key-keyboards.patch`
+## 4. Direct addressing ran on keyboards without per-key support
 
-**Symptom:** `asusd-user` logged, on every session start:
+`0004-asusd-user-only-direct-address-per-key-keyboards.patch`
+
+Every session start logged this:
 
 ```
 ERROR: Aura direct addressing error: org.freedesktop.DBus.Error.UnknownObject:
        Unknown object '/xyz/ljones/Aura'
 ```
 
-It was invisible while the autostart entry sent stdout to `/dev/null`; it
-became visible once `asusd-user-session` started keeping the log.
+Nobody saw it while the autostart entry sent stdout to `/dev/null`. It appeared
+once `asusd-user-session` started keeping the log.
 
-**Cause:** `asusd-user` always created an `AuraProxyBlocking` for the legacy
-object path `/xyz/ljones/Aura` and ran a 30 Hz direct-addressing loop, for every
-keyboard. That object only exists for per-key keyboards; on plain and zoned Aura
+`asusd-user` always created an `AuraProxyBlocking` for the legacy path
+`/xyz/ljones/Aura` and ran a 30 Hz direct-addressing loop, whatever keyboard was
+installed. That object only exists for per-key keyboards. On plain and zoned
 keyboards `asusd` applies the effects itself, so the call fails and the loop
 exits. Upstream still has the intended guard commented out
 (`// if supported.keyboard_led.per_key_led_mode {`).
 
-**Fix:** restore the guard, based on the detected keyboard type
-(`LedSupportData::advanced_type == AdvancedAuraType::PerKey`) instead of the
+The patch turns the guard back on and bases it on the detected keyboard type
+(`LedSupportData::advanced_type == AdvancedAuraType::PerKey`) rather than the
 user config, which defaults to `Some(...)`.
 
-**Verification:** after a new login there is no `Aura direct addressing error`
-in `~/.local/state/asusd/asusd-user.log`, and normal (non-per-key) Aura
-control still works.
+After the next login there should be no `Aura direct addressing error` in
+`~/.local/state/asusd/asusd-user.log`, and normal Aura control still works.
 
-**Upstream status:** not fixed as of `13cdaa9` (checked 2026-10-28); the guard
-is still commented out.
+Upstream still has the guard commented out at `13cdaa9` (checked 2026-10-28).
 
-## Live verification (2026-10-28, revision 6)
+## 5. Startup restored the effect but not the brightness
 
-Task: suspend/hibernate with all three patches, then resume and drive the GUI.
+`0005-aura-apply-brightness-on-startup.patch`
 
-Result — pass:
+After a normal boot the keyboard was lit exactly as before the poweroff, but
+`asusctl leds get` printed `Off`, the rog-control-center slider sat at zero and
+`asusctl leds next` went Off to Low, dimming the keyboard instead of turning it
+off.
 
-- `PrepareForSleep(true)` 20:11:52 UTC → `PrepareForSleep(false)` 20:13:13 UTC,
-  same boot id (real resume, not a fresh boot).
-- `/var/log/asusd/current` contains two `CtrlKbdLedTask reloading brightness
-  and modes` lines after the wake (patch 1).
-- `/etc/asusd/aura_1866.ron` still had `brightness: High`; sysfs
-  `asus::kbd_backlight` = 3 and the keyboard was lit (patch 3, part 2).
-- `SupportedBasicZones` returned `au 4 1 2 3 4` and `SupportedPowerZones`
-  `au 2 1 2` after the resume; `SetLedModeData` succeeded and
-  `rog-control-center` could change colour, mode and brightness (patch 3,
-  part 1).
-- `asusd-user` runs without the `Cannot start a runtime from within a runtime`
-  panic (patch 2).
+`reload()` runs when the daemon starts and reapplies the power states and the
+Aura effect, but never `config.brightness`. The kernel LED class
+(`/sys/class/leds/asus::kbd_backlight/brightness`) starts at 0 and stays there,
+so everything that reads it thinks the keyboard is off. The EC keeps the
+physical level from before the shutdown, which is why the keys were still lit.
+On resume the sleep handler hid the same gap, because it reapplies brightness by
+itself.
+
+The patch writes `config.brightness` through `set_brightness()` after applying
+the mode, so sysfs, the config and the hardware agree. On a device without the
+LED class it only logs a warning and the daemon keeps running.
+
+Check it by restarting `asusd` or rebooting with `brightness: High` in
+`/etc/asusd/aura_1866.ron`. `asusctl leds get` must print `High`, sysfs must read
+`3`, and the lighting must not change.
+
+Upstream still ends `reload()` after `write_current_config_mode()` at `13cdaa9`
+(checked 2026-10-29).
+
+## What the tests showed
+
+On 2026-10-28 I suspended and hibernated with revision 6, resumed, then used the
+GUI.
+
+`PrepareForSleep(true)` went out at 20:11:52 UTC and `PrepareForSleep(false)`
+came back at 20:13:13 UTC with the same boot id, so it was a real resume.
+`/var/log/asusd/current` had two `CtrlKbdLedTask reloading brightness and modes`
+lines after the wake (patch 1). `/etc/asusd/aura_1866.ron` still said
+`brightness: High`, sysfs read 3 and the keyboard was lit (patch 3, second
+part). `SupportedBasicZones` returned `au 4 1 2 3 4` and `SupportedPowerZones`
+returned `au 2 1 2`; `SetLedModeData` succeeded and the GUI could change colour,
+mode and brightness (patch 3, first part). `asusd-user` ran without the runtime
+panic (patch 2).
 
 Before revision 6 the same test left the keyboard dark and the Aura properties
-reported no zones, so all three patches are required on this hardware
-(G513Q / Aura type 1866, Void Linux, runit + elogind, no systemd).
+reported no zones, so all three patches are needed on this hardware: G513Q,
+Aura type 1866, Void with runit and elogind, no systemd.
 
-Revision 7 additionally ships the layouts in `/usr/share/rog-gui/layouts/`, the
+Revision 7 added the layouts in `/usr/share/rog-gui/layouts/`, the
 `aura_support.ron` database and a logging `asusd-user-session` wrapper. After
-installing it and restarting the session daemon, `asusd-user.log` shows
+installing it and restarting the session daemon, `asusd-user.log` showed
 `Loaded default LED support data from /usr/share/asusd/aura_support.ron` and
-`Matched to G513Q` with no `IO Error` and no `Aura direct addressing error`
-(patch 4); `asusctl leds get` still reports `High`.
+`Matched to G513Q`, with no `IO Error` and no `Aura direct addressing error`
+(patch 4). `asusctl leds get` still reported `High`.
 
-## Known upstream behaviour, intentionally not patched
+## Upstream behaviour I left alone
 
-After resume, elogind delivers `PrepareForSleep(false)` more than once, so with
-both the platform and Aura subscribers registered the log shows four
-`Doing on_prepare_for_sleep(false)` lines and patch 1's handler runs twice
-(`CtrlKbdLedTask reloading brightness and modes`). Before patch 1 there was only
-one subscriber, but the wake signal was still delivered twice. The handler is
-idempotent — it applies the same brightness/mode twice — so this is harmless.
-Not patched and not reported upstream.
+elogind sends `PrepareForSleep(false)` more than once after a resume. With both
+the platform and the Aura subscribers registered, the log shows four
+`Doing on_prepare_for_sleep(false)` lines and patch 1's handler runs twice. Even
+before patch 1, when there was one subscriber, the wake signal arrived twice.
+The handler applies the same brightness and mode both times, so it is harmless.
+I did not patch it and did not report it.
 
-## Re-checking against a new upstream release
+## Checking a new upstream release
 
-Look at `asusd/src/aura_laptop/trait_impls.rs` (is `create_tasks()` called? does
-the `sleeping` branch still call `update_config()`?) and
-`asusd-user/src/daemon.rs` (is `main` still `#[tokio::main]`? is the per-key
-guard still commented out?). Drop a patch only after a local build **and** a
-live resume/login test — a clean compile does not prove the handler runs.
+Start with `asusd/src/aura_laptop/trait_impls.rs`: is `create_tasks()` called,
+and does the `sleeping` branch still call `update_config()`? Then
+`asusd-user/src/daemon.rs`: is `main` still `#[tokio::main]`, and is the per-key
+guard still commented out? Drop a patch only after a local build and a real
+resume or login. A clean compile does not prove the handler runs.
 
-Current package revision with these patches: `revision=7`, upstream commit
+Current package revision with these patches: `revision=8`, upstream commit
 `13cdaa9`.

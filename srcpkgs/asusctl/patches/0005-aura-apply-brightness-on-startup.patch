@@ -1,0 +1,30 @@
+# Apply the saved keyboard brightness when asusd starts.
+#
+# `reload()` ran at startup and reapplied the power states and the Aura
+# effect, but never the stored brightness. The kernel LED class
+# (asus::kbd_backlight) starts at 0, and the EC keeps the physical level
+# from before poweroff, so the keyboard stayed lit while `asusctl leds get`,
+# the rog-control-center slider and `leds next` all believed it was Off
+# (Off -> Low dims instead of turning the lights off).
+#
+# Upstream status at 13cdaa9 (2026-10-29): not fixed. See PATCHES.md.
+--- a/asusd/src/aura_laptop/trait_impls.rs	2026-10-29 11:46:05.135421340 +0100
++++ b/asusd/src/aura_laptop/trait_impls.rs	2026-10-29 11:46:05.155962810 +0100
+@@ -348,6 +348,17 @@
+             .ok();
+         debug!("reloading keyboard mode");
+         self.0.write_current_config_mode(&mut config).await?;
++        // The kernel LED class starts at 0 on boot and the daemon only
++        // reapplied the effect, so `brightness()` (and the GUI) reported Off
++        // while the keyboard was still lit from the EC. Apply the saved level
++        // as well so sysfs, config and hardware agree.
++        debug!("reloading brightness");
++        let brightness = config.brightness;
++        self.0
++            .set_brightness(brightness.into())
++            .await
++            .map_err(|err| warn!("{err}"))
++            .ok();
+         Ok(())
+     }
+ }
