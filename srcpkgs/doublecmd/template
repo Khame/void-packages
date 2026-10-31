@@ -1,0 +1,98 @@
+# Template file for 'doublecmd'
+pkgname=doublecmd
+version=1.2.9
+revision=1
+# Double Commander is built with lazbuild (FPC/Lazarus), not make.
+# Upstream INSTALL.txt asks for FPC >= 3.2.2 and Lazarus >= 3.0, while Void
+# currently ships fpc 3.2.0 and lazarus 2.2.0. The source carries version
+# guards for older toolchains, so the build is attempted as-is.
+hostmakedepends="fpc lazarus"
+makedepends="qt5pas-devel qt5-tools-devel qt5-svg-devel openssl-devel"
+# qt5-wayland: Void templates have no optdepends, and without this plugin a
+# Wayland session without XWayland cannot start the program at all.
+depends="qt5pas qt5-wayland hicolor-icon-theme"
+short_desc="Twin-panel (commander-style) file manager"
+maintainer="Khame <khame.dev@protonmail.com>"
+license="GPL-2.0-or-later"
+homepage="https://doublecmd.sourceforge.io/"
+distfiles="https://github.com/doublecmd/doublecmd/releases/download/v${version}/doublecmd-${version}-src.tar.gz"
+checksum=05ea5d580e2ac3a52cd0994e2152a56009b587a371672fd1ff37060e6f418e26
+# FPC emits non-PIE binaries.
+nopie=yes
+
+do_build() {
+	# Void's lazarus package installs no config, so lazbuild cannot find its
+	# own data directory; the patch lets us pass it explicitly.
+	export lazbuild="/usr/bin/lazbuild --lazarusdir=/usr/lib/lazarus"
+	./build.sh release qt5
+}
+
+do_install() {
+	local _dc=usr/lib/doublecmd
+
+	# Main binary and its data files live together; the binary locates
+	# plugins and language files relative to its own path.
+	vinstall doublecmd 755 ${_dc}
+	vinstall doublecmd.help 644 ${_dc}
+	vinstall pinyin.tbl 644 ${_dc}
+	vcopy default ${_dc}
+
+	# Plugins (WCX/WDX/WFX/WLX/DSX) are loaded from the install dir. Only the
+	# built plugin files and their language data are installed; the source
+	# trees stay out of the package.
+	for _p in base64 cpio deb rpm unrar zip sevenzip; do
+		vmkdir ${_dc}/plugins/wcx/${_p}
+		vcopy "plugins/wcx/${_p}/*.wcx" ${_dc}/plugins/wcx/${_p}
+		if [ -d plugins/wcx/${_p}/language ]; then
+			vcopy plugins/wcx/${_p}/language ${_dc}/plugins/wcx/${_p}
+		fi
+	done
+	for _p in rpm_wdx deb_wdx audioinfo; do
+		vmkdir ${_dc}/plugins/wdx/${_p}
+		vcopy "plugins/wdx/${_p}/*.wdx" ${_dc}/plugins/wdx/${_p}
+	done
+	vcopy "plugins/wdx/audioinfo/*.lng" ${_dc}/plugins/wdx/audioinfo
+	vmkdir ${_dc}/plugins/wdx/scripts
+	vcopy "plugins/wdx/scripts/*" ${_dc}/plugins/wdx/scripts
+	for _p in ftp samba; do
+		vmkdir ${_dc}/plugins/wfx/${_p}
+		vcopy "plugins/wfx/${_p}/*.wfx" ${_dc}/plugins/wfx/${_p}
+	done
+	vcopy plugins/wfx/ftp/language ${_dc}/plugins/wfx/ftp
+	vinstall plugins/wfx/ftp/src/ftp.ico 644 ${_dc}/plugins/wfx/ftp
+	vmkdir ${_dc}/plugins/wlx/wlxmplayer
+	vcopy "plugins/wlx/wlxmplayer/*.wlx" ${_dc}/plugins/wlx/wlxmplayer
+	vmkdir ${_dc}/plugins/dsx/dsxlocate
+	vcopy "plugins/dsx/DSXLocate/*.dsx" ${_dc}/plugins/dsx/dsxlocate
+
+	# Architecture-independent data, linked back into the install dir so the
+	# layout matches upstream's own Linux installer.
+	vmkdir usr/share/doublecmd
+	vcopy language usr/share/doublecmd
+	vcopy pixmaps usr/share/doublecmd
+	vcopy highlighters usr/share/doublecmd
+	vmkdir usr/share/doublecmd/doc
+	for _doc in doc/*.txt; do
+		vinstall "${_doc}" 644 usr/share/doublecmd/doc
+	done
+	vmkdir ${_dc}/scripts
+	for _py in scripts/*.py; do
+		vinstall "${_py}" 644 ${_dc}/scripts
+	done
+
+	for _d in doc language pixmaps highlighters; do
+		ln -sf "../../share/doublecmd/${_d}" "${DESTDIR}/${_dc}/${_d}"
+	done
+
+	# Desktop integration
+	vman install/linux/doublecmd.1
+	vinstall install/linux/doublecmd.desktop 644 usr/share/applications
+	vinstall doublecmd.png 644 usr/share/pixmaps
+	vinstall pixmaps/mainicon/alt/dcfinal.svg 644 \
+		usr/share/icons/hicolor/scalable/apps doublecmd.svg
+	vinstall install/linux/org.doublecmd.root.policy 644 \
+		usr/share/polkit-1/actions
+
+	vmkdir usr/bin
+	ln -sf "../lib/doublecmd/doublecmd" "${DESTDIR}/usr/bin/doublecmd"
+}

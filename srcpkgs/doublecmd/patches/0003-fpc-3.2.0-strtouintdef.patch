@@ -1,0 +1,27 @@
+StrToUIntDef() was added to SysUtils in FPC 3.2.2. uusersgroups.pas calls it
+when getpwnam()/getgrnam() fail, so with FPC 3.2.0 the unit does not compile.
+Provide a local equivalent with the same semantics (invalid input falls back
+to the supplied default).
+
+--- a/src/platform/unix/uusersgroups.pas
++++ b/src/platform/unix/uusersgroups.pas
+@@ -127,6 +127,19 @@
+   end;  
+ end;
+ 
++{ FPC 3.2.2 added StrToUIntDef to SysUtils; provide it for older compilers. }
++function StrToUIntDef(const S: string; const Default: Cardinal): Cardinal;
++var
++  Code: Integer;
++  Value: Cardinal;
++begin
++  Val(S, Value, Code);
++  if Code = 0 then
++    Result:= Value
++  else
++    Result:= Default;
++end;
++
+ function strToUID(uname: AnsiString): Cardinal;
+ //Converts username to UID ('root' results to 0)
+ var

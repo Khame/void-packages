@@ -1,0 +1,19 @@
+JCL declares the IInterface overrides as "winapi". FPC 3.2.0 treats that as
+stdcall and then rejects it as an implementation of IUnknown._AddRef/_Release,
+which are cdecl outside Windows, producing 50 errors per class. Match the RTL
+declaration: winapi on Windows, cdecl elsewhere. (The other "winapi" uses in
+this unit are JCL's own COM interfaces and stay as they are.)
+
+--- a/plugins/wcx/sevenzip/src/jcl/common/JclCompression.pas
++++ b/plugins/wcx/sevenzip/src/jcl/common/JclCompression.pas
+@@ -822,8 +822,8 @@
+   public
+     { IInterface }
+     // function QueryInterface(const IID: TGUID; out Obj): HRESULT; winapi;
+-    function _AddRef: Integer; winapi;
+-    function _Release: Integer; winapi;
++    function _AddRef: Integer; {$IFDEF MSWINDOWS}winapi{$ELSE}cdecl{$ENDIF};
++    function _Release: Integer; {$IFDEF MSWINDOWS}winapi{$ELSE}cdecl{$ENDIF};
+   public
+     PropNames: array of WideString;
+     PropValues: array of TPropVariant;

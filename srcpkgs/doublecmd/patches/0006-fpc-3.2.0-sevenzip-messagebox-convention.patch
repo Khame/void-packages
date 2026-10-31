@@ -1,0 +1,16 @@
+Same root cause as 0005, one level up: TMessageBoxFunction is declared
+"winapi", but the MessageBox pointer handed over by the plugin API is cdecl
+outside Windows, so assigning it fails with an incompatible calling
+convention. Match the API declaration.
+
+--- a/plugins/wcx/sevenzip/src/platform/sevenziphlp.pas
++++ b/plugins/wcx/sevenzip/src/platform/sevenziphlp.pas
+@@ -33,7 +33,7 @@
+ function FileMove(const OldName, NewName: String): Boolean;
+ 
+ type
+-  TMessageBoxFunction = function(Text, Caption: PAnsiChar; Flags: LongInt): Integer; winapi;
++  TMessageBoxFunction = function(Text, Caption: PAnsiChar; Flags: LongInt): Integer; {$IFDEF MSWINDOWS}winapi{$ELSE}cdecl{$ENDIF};
+ 
+ var
+   MessageBoxFunction: TMessageBoxFunction = nil;

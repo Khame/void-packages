@@ -1,0 +1,15 @@
+TSynIniSyn.CommentTypes (with ictSemicolon/ictHash) was added in Lazarus 3.0.
+With 2.2.0 the INI highlighter only knows the classic ';' comment marker, so
+drop the assignment. Effect is cosmetic: '#' lines are not coloured as
+comments, nothing else changes.
+
+--- a/src/uhighlighters.pas	2026-10-31 18:48:15.441468859 +0100
++++ b/src/uhighlighters.pas	2026-10-31 18:48:15.441513793 +0100
+@@ -239,7 +239,6 @@
+ constructor TSynIniSynEx.Create(AOwner: TComponent);
+ begin
+   inherited Create(AOwner);
+-  CommentTypes := [ictSemicolon, ictHash];
+   CommentAttri.StoredName := SYNS_XML_AttrComment;
+   TextAttri.StoredName    := SYNS_XML_AttrText;
+   SectionAttri.StoredName := SYNS_XML_AttrSection;

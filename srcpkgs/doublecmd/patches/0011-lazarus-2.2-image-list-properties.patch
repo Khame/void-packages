@@ -1,0 +1,32 @@
+TCustomImage gained Images/ImageWidth/ImageIndex in Lazarus 3.0. With 2.2.0
+assign the bitmap to Picture directly; the HiDPI scale factor is then not
+applied to the bitmap, only the control geometry decides the size.
+
+--- a/src/platform/upixmapmanager.pas	2026-10-31 18:51:25.267310898 +0100
++++ b/src/platform/upixmapmanager.pas	2026-10-31 18:51:25.267498569 +0100
+@@ -517,22 +517,11 @@
+   const imageControl: TCustomImage;
+   const imageSize: Integer;
+   bitmap: Graphics.TBitmap);
+-var
+-  oldImages: TCustomImageList;
+-  images: TImageList;
+-  imageListSize: Integer;
+ begin
+-  oldImages:= imageControl.Images;
+-  imageListSize := Round(imageSize * findScaleFactorByControl(imageControl));
+-  images := TImageList.Create(imageControl);
+-  images.Width := imageListSize;
+-  images.Height := imageListSize;
+-  images.Add(bitmap, nil);
+-  imageControl.ImageWidth := imageSize;
+-  imageControl.Images := images;
+-  imageControl.ImageIndex := 0;
++  { TCustomImage.Images/ImageWidth/ImageIndex need Lazarus 3.0. Assign the
++    bitmap directly instead; scaling then follows the control size. }
++  imageControl.Picture.Assign(bitmap);
+   FreeAndNil(bitmap);
+-  FreeAndNil(oldImages);
+ end;
+ 
+ { TPixMapManager }

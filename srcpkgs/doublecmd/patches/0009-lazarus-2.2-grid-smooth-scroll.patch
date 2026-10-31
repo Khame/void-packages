@@ -1,0 +1,19 @@
+TrySmoothScrollBy() was added to TCustomGrid in Lazarus 3.0. ScrollBy()
+does the same scroll and returns nothing, so mark the wheel event handled
+explicitly. Behaviour matches except that a scroll at the grid boundary no
+longer falls through to the parent control.
+
+--- a/src/fileviews/uthumbfileview.pas	2026-10-31 18:49:21.795816563 +0100
++++ b/src/fileviews/uthumbfileview.pas	2026-10-31 18:49:21.795886183 +0100
+@@ -671,7 +671,10 @@
+   else begin
+     WheelDelta:= -dgPanel.DefaultRowHeight;
+   end;
+-  Handled:= TThumbDrawGrid(dgPanel).TrySmoothScrollBy(0, WheelDelta);
++  { TrySmoothScrollBy exists only since Lazarus 3.0; ScrollBy does the
++    same job and the wheel event is consumed either way. }
++  TThumbDrawGrid(dgPanel).ScrollBy(0, WheelDelta);
++  Handled:= True;
+ end;
+ 
+ procedure TThumbFileView.CreateDefault(AOwner: TWinControl);

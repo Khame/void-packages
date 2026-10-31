@@ -1,0 +1,17 @@
+FPC 3.2.0 declares FpIOCtl's request argument as cInt on Linux, so the
+$80086601 request for FS_IOC_GETFLAGS does not fit in a signed 32-bit
+constant. FPC 3.2.2 changed TIOCtlRequest to culong, which is why upstream
+requires 3.2.2. Keep the identical 32-bit bit pattern; the compiler
+zero-extends it into the argument register, so ioctl receives the same value.
+
+--- a/components/doublecmd/dclinux.pas
++++ b/components/doublecmd/dclinux.pas
+@@ -33,7 +33,7 @@
+   CLOSE_RANGE_CLOEXEC = (1 << 2);
+ 
+ const
+-  FS_IOC_GETFLAGS = $80086601;
++  FS_IOC_GETFLAGS = LongInt($80086601);
+   FS_IOC_SETFLAGS = $40086602;
+   (*
+    * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)

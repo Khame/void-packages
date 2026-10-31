@@ -1,0 +1,16 @@
+TSpeedButton.Alignment was added in Lazarus 3.0. Patch 0004 already makes
+TKASToolLabel draw left-aligned, which is what this assignment asks for, so
+the line is redundant on 2.2.0.
+
+--- a/src/fmain.pas	2026-10-31 18:50:18.294524462 +0100
++++ b/src/fmain.pas	2026-10-31 18:50:18.294936935 +0100
+@@ -5107,7 +5107,8 @@
+       S := Format(rsFreeMsg, [cnvFormatFileSize(High(Int64), uoscHeader), cnvFormatFileSize(High(Int64), uoscHeader)]);;
+     end;
+ 
+-    Button.Alignment:= taLeftJustify;
++    { TSpeedButton.Alignment needs Lazarus 3.0; KASToolBar draws these
++      labels left-aligned already (see patch 0004). }
+     Button.Constraints.MinWidth:= Button.Canvas.TextWidth(S) + ScaleX(16, 96);
+   end;
+ 

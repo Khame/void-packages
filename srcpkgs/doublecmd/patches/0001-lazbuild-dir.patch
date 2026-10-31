@@ -1,0 +1,14 @@
+Respect a pre-set lazbuild command so the packaging can pass --lazarusdir.
+Void's lazarus package ships no user/system config, so lazbuild cannot infer
+its own data directory on its own.
+
+--- a/build.sh
++++ b/build.sh
+@@ -10,7 +10,7 @@
+ 
+ # path to lazbuild
+-export lazbuild=$(which lazbuild)
++export lazbuild="${lazbuild:-$(which lazbuild)}"
+ 
+ # Set up widgetset: gtk2 or qt or qt5 or cocoa
+ # Set up processor architecture: i386 or x86_64
