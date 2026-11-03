@@ -1,12 +1,12 @@
 # Template file for 'asusctl'
 pkgname=asusctl
-version=6.5.0.20261024
-revision=9
+version=6.5.0.20261031
+revision=10
 # Six local patches (Aura sleep handler, asusd-user runtime, runtime state on
 # sleep, per-key guard, brightness at startup, duplicate logind signals) are
 # documented in PATCHES.md, including how to check whether a newer upstream
 # commit makes them unnecessary.
-_commit=13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9
+_commit=f537fcac69284f69d0ff1ab2f1cd720476e006de
 build_style=gnu-makefile
 make_build_target="all"
 # Files are installed manually in do_install because upstream's "make install"
@@ -19,10 +19,11 @@ short_desc="Daemon, CLI and KDE Plasma widget for ASUS ROG laptops"
 maintainer="Khame <khame.dev@protonmail.com>"
 license="MPL-2.0"
 homepage="https://github.com/OpenGamingCollective/asusctl"
-# Latest main-branch commit: per-key LED support for G713PI, TUF A16 FA608WV
-# support, TUF kbd_rgb_mode speed fix. There is no upstream release tag for it.
+# Latest main-branch commit: docs: replace old kofi with nero kofi; no upstream
+# release tag for the 6.5.0 series. The snapshot includes per-key LED support
+# for G713PI, TUF A16 FA608WV support and the TUF kbd_rgb_mode speed fix.
 distfiles="https://github.com/OpenGamingCollective/asusctl/archive/${_commit}.tar.gz"
-checksum=b202bb4ba0dfeb4ec46975ad69d9e39bec54441e9af833adfc0e24f32ead8a35
+checksum=a7b17151ac868de25e863ff2deb9bd17f4f1bd1db66cb9e74b7b1fe443078b44
 
 do_install() {
 	# ── binaries ──
@@ -83,7 +84,7 @@ do_install() {
 
 	# ── XDG autostart instead of "systemd --user" ──
 	vinstall ${FILESDIR}/xdg-autostart/asusd-user.desktop 644 etc/xdg/autostart
-	vinstall ${FILESDIR}/asusd-user-session 755 usr/bin
+	vbin ${FILESDIR}/asusd-user-session
 
 	# ── KDE plasmoid (profile / charge limit / keyboard / Aura widget) ──
 	# System-wide install instead of ~/.local/share, so it is visible to
@@ -94,4 +95,13 @@ do_install() {
 		usr/share/plasma/plasmoids/org.voidlinux.plasma.asusctl/
 
 	vlicense LICENSE
+}
+
+asusctl-plasma_package() {
+	short_desc="KDE Plasma widget for ASUS ROG laptops"
+	depends="asusctl plasma-workspace kf6-kirigami plasma5support"
+
+	pkg_install() {
+		vmove usr/share/plasma/plasmoids/org.voidlinux.plasma.asusctl
+	}
 }

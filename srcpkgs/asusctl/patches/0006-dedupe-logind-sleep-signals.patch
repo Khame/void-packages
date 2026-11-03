@@ -1,3 +1,11 @@
+# Ignore duplicate logind wake signals.
+#
+# elogind can deliver the same PrepareForSleep(false) transition more than once
+# for one resume. Ignore an identical transition received within two seconds so
+# the Aura reload runs once instead of once per duplicate signal.
+#
+# Upstream status at f537fca (2026-11-03): no deduplication is present.
+
 --- a/asusd/src/lib.rs
 +++ b/asusd/src/lib.rs
 @@ -20,0 +21 @@

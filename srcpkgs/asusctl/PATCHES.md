@@ -1,7 +1,7 @@
 # Local patches for asusctl
 
 This package carries six local patches against upstream commit
-[`13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9`](https://github.com/OpenGamingCollective/asusctl/tree/13cdaa9ccbc0b519d3c888c1c9d97e00faf91cf9).
+[`f537fcac69284f69d0ff1ab2f1cd720476e006de`](https://github.com/OpenGamingCollective/asusctl/tree/f537fcac69284f69d0ff1ab2f1cd720476e006de).
 They stay here, not upstream, because they only fix what breaks on my laptop.
 Check them again on every version bump.
 
@@ -29,8 +29,8 @@ grep 'CtrlKbdLedTask reloading brightness and modes' /var/log/asusd/current | ta
 asusctl leds get   # must match /etc/asusd/aura_*.ron
 ```
 
-Upstream still has the TODO and the commented-out call at `13cdaa9`
-(checked 2026-10-28).
+Upstream still has the TODO and the commented-out call at `f537fca`
+(checked 2026-11-03).
 
 ## 2. asusd-user panicked at login
 
@@ -107,8 +107,9 @@ busctl --system get-property xyz.ljones.Asusd /xyz/ljones/aura/*_*_* \
 ```
 
 Upstream still calls `update_config()` from the `sleeping` branch and still does
-a bare `read()` at `13cdaa9` (checked 2026-10-28). This patch needs patch 1,
-because that is what registers the handler.
+the runtime fields are still reset and a bare `read()` still allows a zero
+brightness to be saved at `f537fca` (checked 2026-11-03). This patch needs
+patch 1, because that is what registers the handler.
 
 ## 4. Direct addressing ran on keyboards without per-key support
 
@@ -138,7 +139,7 @@ user config, which defaults to `Some(...)`.
 After the next login there should be no `Aura direct addressing error` in
 `~/.local/state/asusd/asusd-user.log`, and normal Aura control still works.
 
-Upstream still has the guard commented out at `13cdaa9` (checked 2026-10-28).
+Upstream still has the guard commented out at `f537fca` (checked 2026-11-03).
 
 ## 5. Startup restored the effect but not the brightness
 
@@ -165,8 +166,8 @@ Check it by restarting `asusd` or rebooting with `brightness: High` in
 `/etc/asusd/aura_1866.ron`. `asusctl leds get` must print `High`, sysfs must read
 `3`, and the lighting must not change.
 
-Upstream still ends `reload()` after `write_current_config_mode()` at `13cdaa9`
-(checked 2026-10-29).
+Upstream still ends `reload()` after `write_current_config_mode()` at `f537fca`
+(checked 2026-11-03).
 
 ## 6. One wake reloaded the keyboard twice
 
@@ -204,7 +205,7 @@ grep 'reloading brightness and modes' /var/log/asusd/current | tail -3
 There should be one `Ignoring repeated` line per subscriber and a single reload
 for the wake.
 
-Upstream has no de-duplication at `13cdaa9` (checked 2026-10-29).
+Upstream has no de-duplication at `f537fca` (checked 2026-11-03).
 
 ## What the tests showed
 
@@ -265,5 +266,5 @@ guard still commented out? Then `asusd/src/lib.rs`: does
 Drop a patch only after a local build and a real resume or login. A clean compile
 does not prove the handler runs.
 
-Current package revision with these patches: `revision=9`, upstream commit
-`13cdaa9`.
+Current package revision with these patches: `revision=10`, upstream commit
+`f537fcac69284f69d0ff1ab2f1cd720476e006de`.

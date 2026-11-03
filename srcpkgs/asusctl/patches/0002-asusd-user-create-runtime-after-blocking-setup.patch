@@ -5,7 +5,7 @@
 # internally. Do all blocking setup in a plain main(), then create a
 # current_thread runtime and run the async server tasks inside block_on().
 #
-# Upstream status at 13cdaa9 (2026-10-28): not fixed. See PATCHES.md before
+# Upstream status at f537fca (2026-11-03): not fixed. See PATCHES.md before
 # updating.
 --- a/asusd-user/src/daemon.rs
 +++ b/asusd-user/src/daemon.rs

@@ -3,7 +3,7 @@
 # handler is never registered and the keyboard backlight stays dark after
 # resume (brightness/mode are not restored).
 #
-# Upstream status at 13cdaa9 (2026-10-28): not fixed, there is still a TODO
+# Upstream status at f537fca (2026-11-03): not fixed, there is still a TODO
 # above the commented-out create_tasks() call. See PATCHES.md before updating.
 --- a/asusd/src/aura_laptop/trait_impls.rs
 +++ b/asusd/src/aura_laptop/trait_impls.rs

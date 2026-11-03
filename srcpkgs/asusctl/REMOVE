@@ -1,0 +1,20 @@
+case "$ACTION" in
+pre)
+	# Stop the runit logger before removing the service directory.
+	if [ -e /var/service/asusd/log ]; then
+		sv down asusd/log >/dev/null 2>&1 || :
+	fi
+
+	# Do not remove /var/service/asusd: the link is administrator-owned.
+	# Stopping the service prevents a daemon from surviving package removal.
+	if [ -e /var/service/asusd ]; then
+		sv down asusd >/dev/null 2>&1 || :
+	fi
+
+	# Stop session processes started by the package. Do not use a broad match.
+	for name in asusd-user rog-control-center; do
+		pids=$(pgrep -x "$name" 2>/dev/null || :)
+		[ -n "$pids" ] && kill $pids 2>/dev/null || :
+	done
+	;;
+esac

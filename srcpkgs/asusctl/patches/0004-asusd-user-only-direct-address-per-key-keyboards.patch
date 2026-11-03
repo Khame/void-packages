@@ -15,10 +15,8 @@
 # keyboard type rather than a config flag that defaults to Some(...).
 #
 # Depends on 0002 (same file, main() restructure).
-# Upstream status at 13cdaa9 (2026-10-28): not fixed, the guard is still
+# Upstream status at f537fca (2026-11-03): not fixed, the guard is still
 # commented out.
---- a/asusd-user/src/daemon.rs
-+++ b/asusd-user/src/daemon.rs
 --- a/asusd-user/src/daemon.rs
 +++ b/asusd-user/src/daemon.rs
 @@ -9,7 +9,7 @@
