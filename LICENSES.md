@@ -11,7 +11,7 @@ the license of that upstream.
 | `srcpkgs/asusctl/files/plasmoid/` | MIT | Own KDE Plasma widget. Shipped in the `asusctl-plasma` package, which declares `license="MIT"` and installs its own license text |
 | `srcpkgs/asusctl/patches/*.patch` | MPL-2.0 | Modifications of upstream asusctl files (MPL-2.0) |
 | `srcpkgs/doublecmd/patches/*.patch` | Same as the file each patch changes | Mostly GPL-2.0-or-later; 0002, 0005 and 0006 touch LGPL or MPL-1.1 files. Per-directory licenses are listed in upstream's `install/linux/deb/doublecmd/copyright` |
-| `srcpkgs/doublecmd/files/licenses/CC0-1.0.txt`, `Apache-2.0.txt` | CC0-1.0, Apache-2.0 | Canonical license texts for bundled KAScrypt components |
+| `srcpkgs/doublecmd/files/licenses/CC0-1.0.txt` | CC0-1.0 | Canonical license text for bundled KAScrypt components |
 | `srcpkgs/doublecmd/files/licenses/SOURCE-AVAILABILITY.txt` | MIT | Packaging notice giving the source URL required by UReSample's terms |
 | `srcpkgs/*/PATCHES.md`, `docs/index.html` | MIT | Documentation written here |
 | `docs/*.xbps`, `docs/*-repodata` | License of the packaged software | Binary packages built from the templates above |
