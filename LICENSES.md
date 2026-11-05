@@ -33,15 +33,15 @@ the license of that upstream.
   `MPL-2.0`, the license of the asusctl source itself.
 * `doublecmd` bundles third-party code (see the template's `license=` line).
   The notices that must accompany binaries (X11, Zlib, BSD, bzip2, Boost, CC0,
-  Apache, and the MIT text of `inflate64` in the zip plugin) are installed to
+  and the MIT text of `inflate64` in the zip plugin) are installed to
   `/usr/share/licenses/doublecmd/`. Upstream's `copyright` file does not list
-  `inflate64` or the KAScrypt CC0/Apache grants, so these were found by scanning
-  the source tree. Argon2 and BLAKE3 permit either CC0-1.0 or Apache-2.0; BLAKE2
-  is CC0-1.0. Both license texts are shipped, as requested by the Argon2 header.
-  The package also includes Public Domain units, the TDiff freeware terms, and
-  UReSample's custom source-availability terms in `COPYRIGHT.thirdparty`. The
-  installed `SOURCE-AVAILABILITY.txt` gives the direct source URL required by
-  UReSample's license.
+  `inflate64` or the KAScrypt CC0 grants, so these were found by scanning the
+  source tree. KAScrypt carries CC0-1.0 (BLAKE2, BLAKE3, Argon2); the package
+  installs it as `LICENSE.CC0-1.0`. UReSample requires source-availability
+  information, hence `/usr/share/doc/doublecmd/SOURCE-AVAILABILITY.txt`.
+  The template also names TDiff (freeware, no binary obligations) and Public
+  Domain (virtualterminal) in `license=`. Apache-2.0 is not needed: the code is
+  offered under CC0-1.0 or Apache-2.0, and the package ships CC0-1.0.
 * The unrar plugin of Double Commander is only a wrapper. `libunrar` is not
   bundled or distributed here.
 

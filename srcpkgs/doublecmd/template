@@ -21,7 +21,7 @@ maintainer="Khame <khame.dev@protonmail.com>"
 # BSD-3-Clause (Synapse), BSD-2-Clause, bzip2-1.0.6, MIT (inflate64 in the zip
 # plugin). Per-directory list:
 # install/linux/deb/doublecmd/copyright in the source tarball.
-license="GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MPL-1.1 AND MPL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND X11 AND Zlib AND BSL-1.0 AND bzip2-1.0.6 AND MIT AND CC0-1.0 AND (CC0-1.0 OR Apache-2.0) AND Public Domain AND custom:TDiff AND custom:UReSample"
+license="GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MPL-1.1 AND MPL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND X11 AND Zlib AND BSL-1.0 AND bzip2-1.0.6 AND MIT AND CC0-1.0 AND Public Domain AND custom:TDiff AND custom:UReSample"
 homepage="https://doublecmd.sourceforge.io/"
 distfiles="https://github.com/doublecmd/doublecmd/releases/download/v${version}/doublecmd-${version}-src.tar.gz"
 checksum=05ea5d580e2ac3a52cd0994e2152a56009b587a371672fd1ff37060e6f418e26
@@ -133,6 +133,5 @@ do_install() {
 	vlicense components/Image32/LICENSE.txt LICENSE.Image32
 	vlicense plugins/wcx/zip/src/inflate64/LICENSE.txt LICENSE.inflate64
 	vlicense ${FILESDIR}/licenses/CC0-1.0.txt LICENSE.CC0-1.0
-	vlicense ${FILESDIR}/licenses/Apache-2.0.txt LICENSE.Apache-2.0
 	vinstall ${FILESDIR}/licenses/SOURCE-AVAILABILITY.txt 644 usr/share/doc/doublecmd
 }

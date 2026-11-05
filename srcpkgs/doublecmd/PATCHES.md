@@ -184,3 +184,9 @@ Their license texts are shipped from `files/licenses/`. The binary also
 includes the Public Domain VirtualTerminal units and TDiff/UReSample code;
 `COPYRIGHT.thirdparty` retains their terms, and the package installs a direct
 source-availability notice for UReSample. See `LICENSES.md`.
+
+Apache-2.0 is dropped from the license expression; the KAScrypt code is
+shipped under CC0-1.0 as `LICENSE.CC0-1.0`. The UReSample source-availability
+notice is installed as `/usr/share/doc/doublecmd/SOURCE-AVAILABILITY.txt`. TDiff
+(freeware, no binary obligations) and the Public Domain VirtualTerminal units
+are named in the `license=` expression. See `LICENSES.md`.
