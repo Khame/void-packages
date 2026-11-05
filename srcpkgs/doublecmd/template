@@ -1,7 +1,7 @@
 # Template file for 'doublecmd'
 pkgname=doublecmd
 version=1.2.9
-revision=1
+revision=2
 # Double Commander is built with lazbuild (FPC/Lazarus), not make.
 # Upstream INSTALL.txt asks for FPC >= 3.2.2 and Lazarus >= 3.0, while Void
 # currently ships fpc 3.2.0 and lazarus 2.2.0. The source carries version
@@ -13,7 +13,15 @@ makedepends="qt5pas-devel qt5-tools-devel qt5-svg-devel openssl-devel"
 depends="qt5pas qt5-wayland hicolor-icon-theme"
 short_desc="Twin-panel (commander-style) file manager"
 maintainer="Khame <khame.dev@protonmail.com>"
-license="GPL-2.0-or-later"
+# GPL-2.0-or-later is the program itself. The binaries also contain bundled
+# components: LGPL (KASToolBar, chsdet, plugins), MPL-1.1 (SynUni, zip
+# plugin, JCL), MPL-2.0 (GifView), BSL-1.0 (Image32), X11 and Zlib (kascrypt),
+# CC0-1.0 (KAScrypt), with Argon2 and BLAKE3 also available under Apache-2.0,
+# Public Domain (VirtualTerminal), freeware TDiff and UReSample custom terms,
+# BSD-3-Clause (Synapse), BSD-2-Clause, bzip2-1.0.6, MIT (inflate64 in the zip
+# plugin). Per-directory list:
+# install/linux/deb/doublecmd/copyright in the source tarball.
+license="GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MPL-1.1 AND MPL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND X11 AND Zlib AND BSL-1.0 AND bzip2-1.0.6 AND MIT AND CC0-1.0 AND (CC0-1.0 OR Apache-2.0) AND Public Domain AND custom:TDiff AND custom:UReSample"
 homepage="https://doublecmd.sourceforge.io/"
 distfiles="https://github.com/doublecmd/doublecmd/releases/download/v${version}/doublecmd-${version}-src.tar.gz"
 checksum=05ea5d580e2ac3a52cd0994e2152a56009b587a371672fd1ff37060e6f418e26
@@ -21,10 +29,32 @@ checksum=05ea5d580e2ac3a52cd0994e2152a56009b587a371672fd1ff37060e6f418e26
 nopie=yes
 
 do_build() {
+	local _fpc_cfg=/etc/fpc.cfg
+	local _crt _crt_dir _cfg_backup _build_rc
+
+	# Void's FPC 3.2.0 config still points at GCC 9.3.0. Add the active GCC
+	# startup-object directory while building, then restore the chroot config.
+	_crt=$(gcc -print-file-name=crtbeginS.o)
+	if [ ! -f "${_crt}" ] || [ ! -f "${_crt%/*}/crtendS.o" ]; then
+		echo "GCC startup objects not found (crtbeginS.o: ${_crt})" >&2
+		return 1
+	fi
+	_crt_dir=${_crt%/*}
+	_cfg_backup=$(mktemp "${PWD}/.fpc.cfg.XXXXXX")
+	cp "${_fpc_cfg}" "${_cfg_backup}"
+	printf '\n-Fl%s\n' "${_crt_dir}" >> "${_fpc_cfg}"
+
 	# Void's lazarus package installs no config, so lazbuild cannot find its
 	# own data directory; the patch lets us pass it explicitly.
 	export lazbuild="/usr/bin/lazbuild --lazarusdir=/usr/lib/lazarus"
-	./build.sh release qt5
+	if ./build.sh release qt5; then
+		_build_rc=0
+	else
+		_build_rc=$?
+	fi
+	cp "${_cfg_backup}" "${_fpc_cfg}"
+	rm -f "${_cfg_backup}"
+	return "${_build_rc}"
 }
 
 do_install() {
@@ -95,4 +125,14 @@ do_install() {
 
 	vmkdir usr/bin
 	ln -sf "../lib/doublecmd/doublecmd" "${DESTDIR}/usr/bin/doublecmd"
+
+	# Notices that must accompany binaries: upstream's per-component copyright
+	# file (contains the X11, Zlib, BSD and bzip2 texts), the Boost text and the
+	# MIT text of inflate64 (zip plugin; missing from upstream's copyright file).
+	vlicense install/linux/deb/doublecmd/copyright COPYRIGHT.thirdparty
+	vlicense components/Image32/LICENSE.txt LICENSE.Image32
+	vlicense plugins/wcx/zip/src/inflate64/LICENSE.txt LICENSE.inflate64
+	vlicense ${FILESDIR}/licenses/CC0-1.0.txt LICENSE.CC0-1.0
+	vlicense ${FILESDIR}/licenses/Apache-2.0.txt LICENSE.Apache-2.0
+	vinstall ${FILESDIR}/licenses/SOURCE-AVAILABILITY.txt 644 usr/share/doc/doublecmd
 }

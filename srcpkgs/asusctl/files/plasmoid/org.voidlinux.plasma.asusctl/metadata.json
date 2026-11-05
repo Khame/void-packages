@@ -10,6 +10,7 @@
         "Description": "Panel do sterowania asusd/asusctl: profile zasilania, limit ładowania, podświetlenie klawiatury, tryby Aura. Wymaga zainstalowanego i uruchomionego asusd (runit) oraz asusctl w PATH.",
         "Icon": "battery-060",
         "Id": "org.voidlinux.plasma.asusctl",
+        "License": "MIT",
         "Name": "ASUS Control (asusctl)",
         "ServiceTypes": [
             "Plasma/Applet"

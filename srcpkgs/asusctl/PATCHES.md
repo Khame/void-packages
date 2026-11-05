@@ -266,5 +266,12 @@ guard still commented out? Then `asusd/src/lib.rs`: does
 Drop a patch only after a local build and a real resume or login. A clean compile
 does not prove the handler runs.
 
-Current package revision with these patches: `revision=10`, upstream commit
+Current package revision with these patches: `revision=11`, upstream commit
 `f537fcac69284f69d0ff1ab2f1cd720476e006de`.
+
+## License
+
+asusctl is MPL-2.0, and so are these patches: each one modifies upstream
+files, so the modified files stay under MPL-2.0 and the patches are published
+here as the corresponding source. The KDE Plasma widget (`asusctl-plasma`) and
+the runit and autostart files are my own work under MIT; see `LICENSES.md`.

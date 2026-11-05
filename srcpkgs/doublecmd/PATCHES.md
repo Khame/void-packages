@@ -169,3 +169,18 @@ geometry still decides the displayed size.
 
 **Still needed?** Only while Void ships Lazarus 2.2.0. Worth re-testing HiDPI
 icon rendering when the toolchain is bumped.
+
+## License
+
+Double Commander is GPL-2.0-or-later but bundles components under other
+licenses (listed in the template and in upstream's
+`install/linux/deb/doublecmd/copyright`). Each patch carries the license of the
+file it changes, which for most of them is GPL-2.0-or-later. Patches 0002
+(`components/doublecmd/dclinux.pas`), 0005 (bundled JCL, MPL-1.1 or
+LGPL-2.1-or-later) and 0006 (sevenzip plugin) touch files under LGPL or
+MPL-1.1; the others touch GPL-2.0-or-later files. KAScrypt adds CC0-1.0 code
+(BLAKE2) and code available under CC0-1.0 or Apache-2.0 (Argon2 and BLAKE3).
+Their license texts are shipped from `files/licenses/`. The binary also
+includes the Public Domain VirtualTerminal units and TDiff/UReSample code;
+`COPYRIGHT.thirdparty` retains their terms, and the package installs a direct
+source-availability notice for UReSample. See `LICENSES.md`.

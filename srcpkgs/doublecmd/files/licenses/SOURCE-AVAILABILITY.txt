@@ -1,0 +1,15 @@
+UReSample source availability
+=============================
+
+This Double Commander package includes src/uresample.pas (UReSample).
+Its license requires informing end users that the source is available at no
+extra charge. The complete Double Commander 1.2.9 source archive is available
+at:
+
+https://github.com/doublecmd/doublecmd/releases/download/v1.2.9/doublecmd-1.2.9-src.tar.gz
+
+SHA-256:
+05ea5d580e2ac3a52cd0994e2152a56009b587a371672fd1ff37060e6f418e26
+
+The Void packaging template and any packaging patches are available at:
+https://github.com/Khame/void-packages/tree/main/srcpkgs/doublecmd

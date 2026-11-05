@@ -1,22 +1,27 @@
 # Template file for 'asusctl'
 pkgname=asusctl
 version=6.5.0.20261031
-revision=10
+revision=11
 # Six local patches (Aura sleep handler, asusd-user runtime, runtime state on
 # sleep, per-key guard, brightness at startup, duplicate logind signals) are
 # documented in PATCHES.md, including how to check whether a newer upstream
 # commit makes them unnecessary.
 _commit=f537fcac69284f69d0ff1ab2f1cd720476e006de
-build_style=gnu-makefile
-make_build_target="all"
 # Files are installed manually in do_install because upstream's "make install"
 # ships systemd units we do not want on a runit-based system.
 hostmakedepends="pkg-config rust cargo clang cmake gettext git"
 makedepends="eudev-libudev-devel dbus-devel pcre2-devel libxkbcommon-devel
  libzstd-devel gtk+3-devel"
 depends="dbus eudev"
+# bindgen-backed Cargo tests need libclang/llvm-config; the workspace
+# simulator tests also link against SDL2.
+checkdepends="clang21-devel SDL2-devel"
 short_desc="Daemon, CLI and KDE Plasma widget for ASUS ROG laptops"
 maintainer="Khame <khame.dev@protonmail.com>"
+# License of the asusctl sources. rog-control-center also links Slint (offered
+# upstream as GPL-3.0-only OR Slint Royalty-free OR Slint Software); that
+# choice belongs to upstream, see LICENSES.md. Own files are MIT, and the
+# asusctl-plasma subpackage below carries its own license text.
 license="MPL-2.0"
 homepage="https://github.com/OpenGamingCollective/asusctl"
 # Latest main-branch commit: docs: replace old kofi with nero kofi; no upstream
@@ -24,6 +29,16 @@ homepage="https://github.com/OpenGamingCollective/asusctl"
 # for G713PI, TUF A16 FA608WV support and the TUF kbd_rgb_mode speed fix.
 distfiles="https://github.com/OpenGamingCollective/asusctl/archive/${_commit}.tar.gz"
 checksum=a7b17151ac868de25e863ff2deb9bd17f4f1bd1db66cb9e74b7b1fe443078b44
+
+do_build() {
+	# The upstream Makefile's default target is just this Cargo command. Avoid
+	# its unrelated grep -P version probe, which Void's grep does not support.
+	cargo build --release --locked
+}
+
+do_check() {
+	cargo test --workspace --locked
+}
 
 do_install() {
 	# ── binaries ──
@@ -100,8 +115,11 @@ do_install() {
 asusctl-plasma_package() {
 	short_desc="KDE Plasma widget for ASUS ROG laptops"
 	depends="asusctl plasma-workspace kf6-kirigami plasma5support"
+	# The widget is own work, not part of upstream asusctl.
+	license="MIT"
 
 	pkg_install() {
 		vmove usr/share/plasma/plasmoids/org.voidlinux.plasma.asusctl
+		vlicense ${FILESDIR}/plasmoid/LICENSE
 	}
 }

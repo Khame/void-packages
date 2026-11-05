@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Khame
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
