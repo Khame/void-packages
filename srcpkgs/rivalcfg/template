@@ -1,0 +1,17 @@
+# Template file for 'rivalcfg'
+pkgname=rivalcfg
+version=4.17.0
+revision=6
+build_style=python3-pep517
+hostmakedepends="python3-flit_core python3-installer"
+depends="python3 python3-hidapi"
+short_desc="CLI tool and Python library to configure SteelSeries gaming mice"
+maintainer="Khame <khame.dev@protonmail.com>"
+license="WTFPL"
+homepage="https://rivalcfg.flozz.org/"
+distfiles="${PYPI_SITE}/r/rivalcfg/rivalcfg-${version}.tar.gz"
+checksum=f2c6fef1a441c558bd7cd36862e894a7f16632bc9cc91a44c6a0dca522507b2a
+
+post_install() {
+	vinstall "${FILESDIR}/99-steelseries-rival.rules" 644 usr/lib/udev/rules.d
+}
