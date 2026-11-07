@@ -14,6 +14,10 @@ the license of that upstream.
 | `srcpkgs/doublecmd/files/licenses/CC0-1.0.txt` | CC0-1.0 | Canonical license text for bundled KAScrypt components |
 | `srcpkgs/doublecmd/files/licenses/SOURCE-AVAILABILITY.txt` | MIT | Packaging notice giving the source URL required by UReSample's terms |
 | `srcpkgs/*/PATCHES.md`, `docs/index.html` | MIT | Documentation written here |
+| `srcpkgs/rivalcfg/patches/*.patch`, `srcpkgs/rivalcfg/files/99-steelseries-rival.rules` | WTFPL | Changes and generated rules derived from rivalcfg, which is WTFPL |
+| `srcpkgs/rivalcfg/INSTALL.msg`, `srcpkgs/rivalcfg/PATCHES.md` | MIT | Packaging glue and documentation written here |
+| `srcpkgs/sensei310-tray/template`, `srcpkgs/sensei310-tray/files/sensei310-tray.desktop` | MIT | Packaging recipe and desktop entry written here |
+| `srcpkgs/sensei310-tray/files/sensei310-tray-source.tar.gz` | MIT | Source archive of the project in this repository |
 | `docs/*.xbps`, `docs/*-repodata` | License of the packaged software | Binary packages built from the templates above |
 
 ## Packaged software
@@ -23,6 +27,8 @@ the license of that upstream.
 | `asusctl` | https://github.com/OpenGamingCollective/asusctl | MPL-2.0 | `MPL-2.0` |
 | `asusctl-plasma` | own widget | MIT (own work) | `MIT` |
 | `doublecmd` | https://github.com/doublecmd/doublecmd | GPL-2.0-or-later, with bundled components under other licenses | SPDX-style expression listing them all, including Void custom refs for TDiff and UReSample |
+| `rivalcfg` | https://github.com/flozz/rivalcfg | WTFPL | `WTFPL` |
+| `sensei310-tray` | the project checkout for this repository | MIT | `MIT` |
 
 ### Notes
 
