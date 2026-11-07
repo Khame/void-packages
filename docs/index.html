@@ -21,12 +21,17 @@
       Documentation: <a href="https://github.com/Khame/asusctl-void-linux">Khame/asusctl-void-linux</a></li>
   <li><code>doublecmd</code> — twin-panel (commander-style) file manager, built from source with Void's FPC/Lazarus.
       Documentation: <a href="https://github.com/Khame/doublecmd-void-linux">Khame/doublecmd-void-linux</a></li>
+  <li><code>rivalcfg</code> — SteelSeries mouse configuration CLI, patched to use system udev rules and the <code>plugdev</code> group.
+      Documentation: <a href="https://github.com/flozz/rivalcfg">flozz/rivalcfg</a></li>
+  <li><code>sensei310-tray</code> — KDE tray controller for the SteelSeries Sensei 310, with guided button mapping.
+      Documentation: <a href="https://github.com/Khame/void-packages/tree/main/srcpkgs/sensei310-tray">srcpkgs/sensei310-tray</a></li>
 </ul>
 
 <h2>Usage</h2>
 <pre>sudo sh -c 'echo "repository=https://khame.github.io/void-packages/" &gt; /etc/xbps.d/10-khame.conf'
 sudo xbps-install -S      # answer Y to import the repository key
-sudo xbps-install asusctl doublecmd</pre>
+sudo xbps-install asusctl doublecmd sensei310-tray</pre>
+<p><code>rivalcfg</code> is installed as a dependency of <code>sensei310-tray</code>.</p>
 
 <h2>Contact</h2>
 <p>Questions and build reports: <a href="mailto:khame.dev@protonmail.com">khame.dev@protonmail.com</a></p>
