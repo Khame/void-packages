@@ -32,7 +32,16 @@ before you answer yes:
 ```
 
 The public key is also published as
-[Khame-void-repo.pub](https://khame.github.io/void-packages/Khame-void-repo.pub).
+[Khame-void-repo.pub](https://khame.github.io/void-packages/Khame-void-repo.pub),
+and you can compute the fingerprint from it:
+
+```sh
+curl -fsSO https://khame.github.io/void-packages/Khame-void-repo.pub
+ssh-keygen -E md5 -lf <(ssh-keygen -i -m PKCS8 -f Khame-void-repo.pub)
+```
+
+The result should match the fingerprint above. It shows the key and the
+fingerprint belong together, though both come from the same site.
 
 ## Install packages
 
