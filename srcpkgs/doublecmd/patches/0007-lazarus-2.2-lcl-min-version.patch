@@ -1,4 +1,4 @@
-doublecmd.lpi requires LCL >= 3.0. The only 3.0 API used by 1.2.9 is
+doublecmd.lpi requires LCL >= 3.0. The only 3.0 API used by 1.2.11 is
 TSpeedButton.Alignment, already handled by patch 0004, so with Lazarus 2.2.0
 the project itself is buildable. Lower the declared minimum to the LCL that
 Void ships. (If Void moves to Lazarus 3.x, this patch can go.)

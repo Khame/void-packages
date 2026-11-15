@@ -1,7 +1,7 @@
 TSpeedButton.Alignment was added in Lazarus 3.0. TKASToolLabel derives from
 TSpeedButton and only uses the value to pick a DrawText alignment flag; DC
 never sets Alignment on these labels, so the LCL default (left) is the right
-fixed value. Keeps 1.2.9 buildable with Lazarus 2.2.0.
+fixed value. Keeps 1.2.11 buildable with Lazarus 2.2.0.
 
 --- a/components/KASToolBar/kastoolbar.pas
 +++ b/components/KASToolBar/kastoolbar.pas

@@ -1,7 +1,7 @@
 # Template file for 'doublecmd'
 pkgname=doublecmd
 version=1.2.11
-revision=1
+revision=2
 # Double Commander is built with lazbuild (FPC/Lazarus), not make.
 # Upstream INSTALL.txt asks for FPC >= 3.2.2 and Lazarus >= 3.0, while Void
 # currently ships fpc 3.2.0 and lazarus 2.2.0. The source carries version
