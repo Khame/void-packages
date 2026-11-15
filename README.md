@@ -12,6 +12,7 @@ https://khame.github.io/void-packages/
 | --- | --- | --- |
 | `asusctl` | ASUS ROG control daemon, CLI tools and an optional KDE Plasma widget. | [Khame/asusctl-void-linux](https://github.com/Khame/asusctl-void-linux) |
 | `doublecmd` | Twin-panel file manager, built from source with Void's FPC and Lazarus. | [Khame/doublecmd-void-linux](https://github.com/Khame/doublecmd-void-linux) |
+| `kxbps` | Native KDE Plasma front end for the xbps package manager. | [Khame/kxbps](https://github.com/Khame/kxbps) |
 | `rivalcfg` | SteelSeries mouse configuration CLI, patched for system udev rules and the `plugdev` group. | [Khame/rivalcfg-void-linux](https://github.com/Khame/rivalcfg-void-linux) |
 | `sensei310-tray` | KDE tray controller for the SteelSeries Sensei 310. | [Khame/sensei310-tray](https://github.com/Khame/sensei310-tray) |
 
@@ -46,11 +47,12 @@ fingerprint belong together, though both come from the same site.
 ## Install packages
 
 ```sh
-sudo xbps-install asusctl doublecmd sensei310-tray
+sudo xbps-install asusctl doublecmd kxbps sensei310-tray
 ```
 
 You can install any of them on its own. `sensei310-tray` needs KDE Plasma and
-`kdialog`; its README covers mouse access and the udev rules.
+`kdialog`; its README covers mouse access and the udev rules. `kxbps` needs KDE
+Plasma as well, and `polkit` is pulled in for the privileged steps.
 
 ## Update
 

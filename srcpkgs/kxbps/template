@@ -1,0 +1,48 @@
+# Template file for 'kxbps'
+pkgname=kxbps
+version=0.11.0
+revision=2
+build_style=cargo
+hostmakedepends="gettext lld qt6-base-devel"
+makedepends="qt6-base-devel qt6-declarative-devel kf6-kirigami-devel
+ kf6-ki18n-devel kf6-kstatusnotifieritem-devel"
+depends="kf6-kirigami kf6-kstatusnotifieritem polkit qt6-svg xbps"
+short_desc="Native KDE Plasma front end for the xbps package manager"
+maintainer="Khame <khame.dev@protonmail.com>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/Khame/kxbps"
+distfiles="${homepage}/releases/download/v${version}/kxbps-${version}.tar.gz"
+checksum=9bf545950c31383d3edb0c02e1ed9a1476b67c710196b9734e300cbf9497af4b
+
+# The default do_install would `cargo install` every binary in the workspace
+# into /usr/bin. The two helpers are only ever started by polkit, and the
+# policy names them under /usr/libexec.
+do_install() {
+	vbin target/${RUST_TARGET}/release/kxbps
+	vinstall target/${RUST_TARGET}/release/kxbps-mirror-apply 755 usr/libexec
+	vinstall target/${RUST_TARGET}/release/kxbps-repo-apply 755 usr/libexec
+
+	vinstall packaging/icons/app/kxbps.svg 644 \
+		usr/share/icons/hicolor/scalable/apps
+	vinstall packaging/icons/app/kxbps-updates.svg 644 \
+		usr/share/icons/hicolor/scalable/apps
+	vinstall packaging/icons/tray/symbolic/kxbps-tray.svg 644 \
+		usr/share/icons/hicolor/scalable/status
+	vinstall packaging/icons/tray/symbolic/kxbps-tray-updates.svg 644 \
+		usr/share/icons/hicolor/scalable/status
+	vinstall packaging/icons/tray/symbolic/kxbps-tray.svg 644 \
+		usr/share/icons/hicolor/scalable/status kxbps-tray-symbolic.svg
+	vinstall packaging/icons/tray/symbolic/kxbps-tray-updates.svg 644 \
+		usr/share/icons/hicolor/scalable/status kxbps-tray-updates-symbolic.svg
+	vinstall packaging/io.github.khame.kxbps.desktop 644 usr/share/applications
+	vinstall packaging/io.github.khame.kxbps.metainfo.xml 644 usr/share/metainfo
+	vinstall packaging/io.github.khame.kxbps.policy 644 usr/share/polkit-1/actions
+	vman man/kxbps.1
+
+	for file in po/*.po; do
+		[ -f "$file" ] || continue
+		lang=$(basename "$file" .po)
+		vmkdir usr/share/locale/$lang/LC_MESSAGES
+		msgfmt -o "${DESTDIR}/usr/share/locale/$lang/LC_MESSAGES/kxbps.mo" "$file"
+	done
+}
