@@ -1,7 +1,7 @@
 # Patches
 
 All eleven patches exist because Void ships `fpc 3.2.0` / `lazarus 2.2.0`,
-while Double Commander 1.2.9 asks for FPC >= 3.2.2 and Lazarus >= 3.0
+while Double Commander 1.2.11 asks for FPC >= 3.2.2 and Lazarus >= 3.0
 (`doc/INSTALL.txt`). They are the minimum needed to build against the older
 toolchain. None removes or changes a feature; a few have small cosmetic side
 effects, called out in the individual entries below.
@@ -106,7 +106,7 @@ Windows, so assigning it to a `winapi` procedure variable fails with
 
 **Why:** lazbuild refuses to build with
 `Project: doublecmd uses LCL (>=3.0), but found LCL 2.2.0.4`. The only 3.0
-API 1.2.9 relies on is `TSpeedButton.Alignment`, covered by patch 0004.
+API 1.2.11 relies on is `TSpeedButton.Alignment`, covered by patch 0004.
 
 **Upstream status:** not needed upstream, which requires Lazarus >= 3.0.
 

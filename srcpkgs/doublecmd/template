@@ -1,7 +1,7 @@
 # Template file for 'doublecmd'
 pkgname=doublecmd
-version=1.2.9
-revision=2
+version=1.2.11
+revision=1
 # Double Commander is built with lazbuild (FPC/Lazarus), not make.
 # Upstream INSTALL.txt asks for FPC >= 3.2.2 and Lazarus >= 3.0, while Void
 # currently ships fpc 3.2.0 and lazarus 2.2.0. The source carries version
@@ -24,7 +24,7 @@ maintainer="Khame <khame.dev@protonmail.com>"
 license="GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND MPL-1.1 AND MPL-2.0 AND BSD-2-Clause AND BSD-3-Clause AND X11 AND Zlib AND BSL-1.0 AND bzip2-1.0.6 AND MIT AND CC0-1.0 AND Public Domain AND custom:TDiff AND custom:UReSample"
 homepage="https://doublecmd.sourceforge.io/"
 distfiles="https://github.com/doublecmd/doublecmd/releases/download/v${version}/doublecmd-${version}-src.tar.gz"
-checksum=05ea5d580e2ac3a52cd0994e2152a56009b587a371672fd1ff37060e6f418e26
+checksum=a1409bd70fc87e4ca76d83bf7964933bb524172327dd2d0a9fd297b1ea7f9924
 # FPC emits non-PIE binaries.
 nopie=yes
 
