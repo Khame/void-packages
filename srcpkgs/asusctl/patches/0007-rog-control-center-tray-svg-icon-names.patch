@@ -1,0 +1,228 @@
+# Use scalable SVG tray icons instead of 512x512 PNG bitmaps.
+#
+# The tray sent IconPixmap with a 512 px PNG that the panel scaled down to its
+# own icon size, so the ROG mark was blurry at 22 px and on HiDPI panels. It
+# now reports IconName and the panel renders the installed SVG itself. The
+# three icons keep the GPU state colors (blue suspended, red active/mux,
+# white dGPU disabled); they are not "-symbolic", so the theme does not
+# recolor them. The files are installed by the template from files/icons/.
+#
+# The dependency on `image` is dropped: it existed only to decode the PNGs.
+# Upstream status at 5346e18 (2026-11-17): the tray still uses PNG bitmaps.
+
+--- a/rog-control-center/src/tray.rs
++++ b/rog-control-center/src/tray.rs
+@@ -3,11 +3,14 @@
+ //! The tray icon color reflects the GPU power status, published by the
+ //! dGPU status monitor in `notify.rs` (the same source as the
+ //! "dGPU status changed" notifications).
++//!
++//! The icons are installed as scalable SVGs and referenced by name, so the
++//! panel renders them at its own size and scale factor instead of scaling a
++//! bitmap down from 512 px.
+ 
+-use std::path::{Path, PathBuf};
+-use std::sync::{Arc, LazyLock, Mutex};
++use std::sync::{Arc, Mutex};
+ 
+-use ksni::{Icon, TrayMethods};
++use ksni::TrayMethods;
+ use log::info;
+ use rog_platform::gpu_pci::GfxPower;
+ use rog_platform::platform::Properties;
+@@ -17,65 +20,16 @@
+ use crate::window::{WindowCommand, WindowController};
+ 
+ const TRAY_LABEL: &str = "ROG Control Center";
+-const TRAY_ICON_PATH: &str = "/usr/share/icons/hicolor/512x512/apps/";
+ 
+-struct Icons {
+-    rog_blue: Icon,
+-    rog_red: Icon,
+-    rog_white: Icon,
+-    gpu_integrated: Icon,
+-}
+-
+-static ICONS: LazyLock<Icons> = LazyLock::new(|| Icons {
+-    rog_blue: read_icon(Path::new("asus_notif_blue.png")),
+-    rog_red: read_icon(Path::new("asus_notif_red.png")),
+-    rog_white: read_icon(Path::new("asus_notif_white.png")),
+-    gpu_integrated: read_icon(Path::new("rog-control-center.png")),
+-});
+-
+-fn read_icon(file: &Path) -> Icon {
+-    let mut path = PathBuf::from(TRAY_ICON_PATH);
+-    path.push(file);
+-    let bytes = match std::fs::read(&path) {
+-        Ok(b) => b,
+-        Err(e) => {
+-            log::warn!("Could not read icon {:?}: {e}, using fallback", path);
+-            return Icon {
+-                width: 16,
+-                height: 16,
+-                data: vec![255; 16 * 16 * 4],
+-            };
+-        }
+-    };
+-
+-    let mut img = match image::load_from_memory_with_format(&bytes, image::ImageFormat::Png) {
+-        Ok(i) => i.to_rgba8(),
+-        Err(e) => {
+-            log::warn!("Could not decode icon {:?}: {e}, using fallback", path);
+-            return Icon {
+-                width: 16,
+-                height: 16,
+-                data: vec![255; 16 * 16 * 4],
+-            };
+-        }
+-    };
+-
+-    for image::Rgba(pixel) in img.pixels_mut() {
+-        // (╯°□°）╯︵ ┻━┻
+-        *pixel = u32::from_be_bytes(*pixel).rotate_right(8).to_be_bytes();
+-    }
+-
+-    let (width, height) = img.dimensions();
+-    Icon {
+-        width: width as i32,
+-        height: height as i32,
+-        data: img.into_raw(),
+-    }
+-}
++/// Tray icons installed under `/usr/share/icons/hicolor/scalable/status/`.
++const ICON_SUSPENDED: &str = "rog-tray-blue";
++const ICON_ACTIVE: &str = "rog-tray-red";
++const ICON_DISABLED: &str = "rog-tray-white";
++const ICON_FALLBACK: &str = "rog-control-center";
+ 
+ struct AsusTray {
+     current_title: String,
+-    current_icon: Icon,
++    current_icon: &'static str,
+     window: WindowController,
+ }
+ 
+@@ -84,8 +38,8 @@
+         TRAY_LABEL.into()
+     }
+ 
+-    fn icon_pixmap(&self) -> Vec<ksni::Icon> {
+-        vec![self.current_icon.clone()]
++    fn icon_name(&self) -> String {
++        self.current_icon.into()
+     }
+ 
+     fn title(&self) -> String {
+@@ -147,13 +101,13 @@
+     }
+ }
+ 
+-/// Map GPU power status and mode to the appropriate tray icon and title.
+-fn map_power_to_icon(power_status: GfxPower, mode: &str, icons: &Icons) -> (Icon, String) {
++/// Map GPU power status to the appropriate tray icon name and title.
++fn power_icon_name(power_status: GfxPower, mode: &str) -> (&'static str, String) {
+     let icon = match power_status {
+-        GfxPower::Suspended => icons.rog_blue.clone(),
+-        GfxPower::AsusDisabled => icons.rog_white.clone(),
+-        GfxPower::AsusMuxDiscreet | GfxPower::Active => icons.rog_red.clone(),
+-        GfxPower::Unknown => icons.gpu_integrated.clone(),
++        GfxPower::Suspended => ICON_SUSPENDED,
++        GfxPower::AsusDisabled => ICON_DISABLED,
++        GfxPower::AsusMuxDiscreet | GfxPower::Active => ICON_ACTIVE,
++        GfxPower::Unknown => ICON_FALLBACK,
+     };
+ 
+     let title = format!("ROG: gpu mode = {mode}, gpu power = {power_status}");
+@@ -170,7 +124,7 @@
+     tokio::spawn(async move {
+         let tray_init = AsusTray {
+             current_title: TRAY_LABEL.to_string(),
+-            current_icon: ICONS.rog_red.clone(),
++            current_icon: ICON_ACTIVE,
+             window,
+         };
+ 
+@@ -191,7 +145,7 @@
+ 
+         // Set initial state from the channel's current value
+         let power = *gpu_status.borrow_and_update();
+-        let (icon, title) = map_power_to_icon(power, gpu_mode(power), &ICONS);
++        let (icon, title) = power_icon_name(power, gpu_mode(power));
+         tray.update(|tray: &mut AsusTray| {
+             tray.current_icon = icon;
+             tray.current_title = title;
+@@ -211,7 +165,7 @@
+                         return;
+                     }
+                     let power = *gpu_status.borrow_and_update();
+-                    let (icon, title) = map_power_to_icon(power, gpu_mode(power), &ICONS);
++                    let (icon, title) = power_icon_name(power, gpu_mode(power));
+                     tray.update(|tray: &mut AsusTray| {
+                         tray.current_icon = icon;
+                         tray.current_title = title;
+@@ -234,30 +188,13 @@
+ mod tests {
+     use super::*;
+ 
+-    fn icon(tag: u8) -> Icon {
+-        Icon {
+-            width: 1,
+-            height: 1,
+-            data: vec![tag],
+-        }
+-    }
+-
+-    const BLUE: u8 = 1;
+-    const RED: u8 = 2;
+-    const WHITE: u8 = 3;
+-    const FALLBACK: u8 = 4;
+-
+-    fn icons() -> Icons {
+-        Icons {
+-            rog_blue: icon(BLUE),
+-            rog_red: icon(RED),
+-            rog_white: icon(WHITE),
+-            gpu_integrated: icon(FALLBACK),
+-        }
+-    }
++    const BLUE: &str = "rog-tray-blue";
++    const RED: &str = "rog-tray-red";
++    const WHITE: &str = "rog-tray-white";
++    const FALLBACK: &str = "rog-control-center";
+ 
+-    fn icon_for(power: GfxPower, mode: &str) -> u8 {
+-        map_power_to_icon(power, mode, &icons()).0.data[0]
++    fn icon_for(power: GfxPower, mode: &str) -> &'static str {
++        power_icon_name(power, mode).0
+     }
+ 
+     #[test]
+@@ -283,7 +220,7 @@
+ 
+     #[test]
+     fn title_reports_mode_and_power() {
+-        let (_, title) = map_power_to_icon(GfxPower::Suspended, "Optimus", &icons());
++        let (_, title) = power_icon_name(GfxPower::Suspended, "Optimus");
+         assert_eq!(title, "ROG: gpu mode = Optimus, gpu power = suspended");
+     }
+ 
+--- a/rog-control-center/Cargo.toml
++++ b/rog-control-center/Cargo.toml
+@@ -19,7 +19,6 @@
+ console-subscriber = { workspace = true, optional = true }
+ 
+ ksni.workspace = true
+-image.workspace = true
+ ashpd.workspace = true
+ 
+ asusd = { path = "../asusd" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -4701,7 +4701,6 @@
+  "dmi_id",
+  "env_logger",
+  "futures-util",
+- "image",
+  "ksni",
+  "log",
+  "notify-rust",

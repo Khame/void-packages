@@ -17,7 +17,7 @@
 
 <h2>Packages</h2>
 <ul>
-  <li><code>asusctl</code> — ASUS ROG control daemon, CLI tools and KDE Plasma widget.
+  <li><code>asusctl</code> — ASUS ROG control daemon and CLI tools, with an optional KDE Plasma widget in <code>asusctl-plasma</code>.
       Documentation: <a href="https://github.com/Khame/asusctl-void-linux">Khame/asusctl-void-linux</a></li>
   <li><code>doublecmd</code> — twin-panel (commander-style) file manager, built from source with Void's FPC/Lazarus.
       Documentation: <a href="https://github.com/Khame/doublecmd-void-linux">Khame/doublecmd-void-linux</a></li>
@@ -33,7 +33,8 @@
 <pre>sudo sh -c 'echo "repository=https://khame.github.io/void-packages/" &gt; /etc/xbps.d/10-khame.conf'
 sudo xbps-install -S      # answer Y to import the repository key
 sudo xbps-install asusctl doublecmd kxbps sensei310-tray</pre>
-<p><code>rivalcfg</code> is installed as a dependency of <code>sensei310-tray</code>.</p>
+<p><code>rivalcfg</code> is installed as a dependency of <code>sensei310-tray</code>.
+<code>asusctl-plasma</code> is the optional Plasma widget for <code>asusctl</code>.</p>
 
 <h2>Contact</h2>
 <p>Questions and build reports: <a href="mailto:khame.dev@protonmail.com">khame.dev@protonmail.com</a></p>

@@ -10,7 +10,7 @@ https://khame.github.io/void-packages/
 
 | Package | Description | Documentation |
 | --- | --- | --- |
-| `asusctl` | ASUS ROG control daemon, CLI tools and an optional KDE Plasma widget. | [Khame/asusctl-void-linux](https://github.com/Khame/asusctl-void-linux) |
+| `asusctl` | ASUS ROG control daemon and CLI tools, with an optional KDE Plasma widget in the `asusctl-plasma` subpackage. | [Khame/asusctl-void-linux](https://github.com/Khame/asusctl-void-linux) |
 | `doublecmd` | Twin-panel file manager, built from source with Void's FPC and Lazarus. | [Khame/doublecmd-void-linux](https://github.com/Khame/doublecmd-void-linux) |
 | `kxbps` | Native KDE Plasma front end for the xbps package manager. | [Khame/kxbps](https://github.com/Khame/kxbps) |
 | `rivalcfg` | SteelSeries mouse configuration CLI, patched for system udev rules and the `plugdev` group. | [Khame/rivalcfg-void-linux](https://github.com/Khame/rivalcfg-void-linux) |

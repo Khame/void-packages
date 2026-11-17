@@ -4,7 +4,7 @@
 # for one resume. Ignore an identical transition received within two seconds so
 # the Aura reload runs once instead of once per duplicate signal.
 #
-# Upstream status at f537fca (2026-11-03): no deduplication is present.
+# Upstream status at 5346e18 (2026-11-17): no deduplication is present.
 
 --- a/asusd/src/lib.rs
 +++ b/asusd/src/lib.rs

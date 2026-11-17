@@ -1,7 +1,7 @@
 # Local patches for asusctl
 
-This package carries six local patches against upstream commit
-[`f537fcac69284f69d0ff1ab2f1cd720476e006de`](https://github.com/OpenGamingCollective/asusctl/tree/f537fcac69284f69d0ff1ab2f1cd720476e006de).
+This package carries seven local patches against upstream commit
+[`5346e184d09c5ed46e5dd16cdecedb7608393502`](https://github.com/OpenGamingCollective/asusctl/tree/5346e184d09c5ed46e5dd16cdecedb7608393502).
 They stay here, not upstream, because they only fix what breaks on my laptop.
 Check them again on every version bump.
 
@@ -29,8 +29,8 @@ grep 'CtrlKbdLedTask reloading brightness and modes' /var/log/asusd/current | ta
 asusctl leds get   # must match /etc/asusd/aura_*.ron
 ```
 
-Upstream still has the TODO and the commented-out call at `f537fca`
-(checked 2026-11-03).
+Upstream still has the TODO and the commented-out call at `5346e18`
+(checked 2026-11-17).
 
 ## 2. asusd-user panicked at login
 
@@ -106,9 +106,9 @@ busctl --system get-property xyz.ljones.Asusd /xyz/ljones/aura/*_*_* \
   xyz.ljones.Aura SupportedBasicZones          # must not be empty
 ```
 
-Upstream still calls `update_config()` from the `sleeping` branch and still does
-the runtime fields are still reset and a bare `read()` still allows a zero
-brightness to be saved at `f537fca` (checked 2026-11-03). This patch needs
+Upstream still calls `update_config()` from the `sleeping` branch, the runtime
+fields are still reset, and a bare `read()` still allows a zero brightness to be
+saved at `5346e18` (checked 2026-11-17). This patch needs
 patch 1, because that is what registers the handler.
 
 ## 4. Direct addressing ran on keyboards without per-key support
@@ -139,7 +139,7 @@ user config, which defaults to `Some(...)`.
 After the next login there should be no `Aura direct addressing error` in
 `~/.local/state/asusd/asusd-user.log`, and normal Aura control still works.
 
-Upstream still has the guard commented out at `f537fca` (checked 2026-11-03).
+Upstream still has the guard commented out at `5346e18` (checked 2026-11-17).
 
 ## 5. Startup restored the effect but not the brightness
 
@@ -166,8 +166,8 @@ Check it by restarting `asusd` or rebooting with `brightness: High` in
 `/etc/asusd/aura_1866.ron`. `asusctl leds get` must print `High`, sysfs must read
 `3`, and the lighting must not change.
 
-Upstream still ends `reload()` after `write_current_config_mode()` at `f537fca`
-(checked 2026-11-03).
+Upstream still ends `reload()` after `write_current_config_mode()` at `5346e18`
+(checked 2026-11-17).
 
 ## 6. One wake reloaded the keyboard twice
 
@@ -205,7 +205,41 @@ grep 'reloading brightness and modes' /var/log/asusd/current | tail -3
 There should be one `Ignoring repeated` line per subscriber and a single reload
 for the wake.
 
-Upstream has no de-duplication at `f537fca` (checked 2026-11-03).
+Upstream has no de-duplication at `5346e18` (checked 2026-11-17).
+
+## 7. The tray icon was a scaled-down bitmap
+
+`0007-rog-control-center-tray-svg-icon-names.patch`
+
+The tray sent `IconPixmap` with a 512×512 PNG
+(`asus_notif_blue/red/white.png`). The panel scales that down to its own icon
+size, 22 px by default and more on HiDPI, so the ROG mark came out soft with a
+ragged edge.
+
+The tray now reports `IconName` and the panel renders the installed SVG itself.
+Three icons keep the GPU state colors: `rog-tray-blue` for a suspended dGPU,
+`rog-tray-red` for active or mux-discreet, `rog-tray-white` for a disabled
+dGPU. They are deliberately not named `-symbolic`, because KDE recolors such
+icons to the theme text color and the state color would be lost. The SVGs are
+copied from `files/icons/` by `do_install`; the patch changes the tray code and
+drops the `image` dependency, which only decoded the PNGs.
+
+The geometry is the upstream `data/icons/scalable/rog-logo.svg` on a 22×22
+canvas with transparent padding, plus a 2-unit outline so the mark survives at
+panel size.
+
+Check after restarting `rog-control-center`:
+
+```sh
+ls -l /usr/share/icons/hicolor/scalable/status/rog-tray-*.svg
+grep 'Tray started' ~/.local/state/rog-control-center/*.log 2>/dev/null
+```
+
+The panel icon must be sharp, follow the GPU state colors, and stay sharp when
+the panel size or the scale factor changes.
+
+Upstream still uses PNG bitmaps in `rog-control-center/src/tray.rs` at
+`5346e18` (checked 2026-11-17).
 
 ## What the tests showed
 
@@ -245,6 +279,12 @@ Revision 9 was checked on the same day with a suspend and resume. Two
 the keyboard once, not twice (patch 6). It came back lit and `asusctl leds get`
 printed `High`.
 
+Revision 12's tray icons were checked on 2026-11-15 with `rog-control-center`
+in a test D-Bus session. The StatusNotifierItem registered with
+`IconName=rog-tray-red`, and the panel rendered the SVG sharply. The tray code
+is unchanged in the `5346e18` snapshot. Sleep and hibernation were not retested
+for revision 12.
+
 Note that `busctl emit` cannot be used to test this: zbus matches the signal
 sender, and a signal from another connection does not reach the handler.
 
@@ -266,8 +306,8 @@ guard still commented out? Then `asusd/src/lib.rs`: does
 Drop a patch only after a local build and a real resume or login. A clean compile
 does not prove the handler runs.
 
-Current package revision with these patches: `revision=11`, upstream commit
-`f537fcac69284f69d0ff1ab2f1cd720476e006de`.
+Current package revision with these patches: `revision=12`, upstream commit
+`5346e184d09c5ed46e5dd16cdecedb7608393502`.
 
 ## License
 

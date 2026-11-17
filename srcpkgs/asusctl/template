@@ -1,12 +1,12 @@
 # Template file for 'asusctl'
 pkgname=asusctl
-version=6.5.0.20261031
-revision=11
-# Six local patches (Aura sleep handler, asusd-user runtime, runtime state on
-# sleep, per-key guard, brightness at startup, duplicate logind signals) are
-# documented in PATCHES.md, including how to check whether a newer upstream
-# commit makes them unnecessary.
-_commit=f537fcac69284f69d0ff1ab2f1cd720476e006de
+version=6.5.0.20261116
+revision=12
+# Seven local patches (Aura sleep handler, asusd-user runtime, runtime state on
+# sleep, per-key guard, brightness at startup, duplicate logind signals,
+# scalable SVG tray icons) are documented in PATCHES.md, including how to check
+# whether a newer upstream commit makes them unnecessary.
+_commit=5346e184d09c5ed46e5dd16cdecedb7608393502
 # Files are installed manually in do_install because upstream's "make install"
 # ships systemd units we do not want on a runit-based system.
 hostmakedepends="pkg-config rust cargo clang cmake gettext git"
@@ -16,7 +16,7 @@ depends="dbus eudev"
 # bindgen-backed Cargo tests need libclang/llvm-config; the workspace
 # simulator tests also link against SDL2.
 checkdepends="clang21-devel SDL2-devel"
-short_desc="Daemon, CLI and KDE Plasma widget for ASUS ROG laptops"
+short_desc="Daemon, CLI and control center for ASUS ROG laptops"
 maintainer="Khame <khame.dev@protonmail.com>"
 # License of the asusctl sources. rog-control-center also links Slint (offered
 # upstream as GPL-3.0-only OR Slint Royalty-free OR Slint Software); that
@@ -24,11 +24,12 @@ maintainer="Khame <khame.dev@protonmail.com>"
 # asusctl-plasma subpackage below carries its own license text.
 license="MPL-2.0"
 homepage="https://github.com/OpenGamingCollective/asusctl"
-# Latest main-branch commit: docs: replace old kofi with nero kofi; no upstream
-# release tag for the 6.5.0 series. The snapshot includes per-key LED support
-# for G713PI, TUF A16 FA608WV support and the TUF kbd_rgb_mode speed fix.
+# Latest main-branch commit: aura support for the ROG Strix G18 G814FP; no
+# upstream release tag for the 6.5.0 series. The snapshot also carries the
+# pulldown-cmark security bump, three rog-control-center layout fixes and
+# Aura support for several new models.
 distfiles="https://github.com/OpenGamingCollective/asusctl/archive/${_commit}.tar.gz"
-checksum=a7b17151ac868de25e863ff2deb9bd17f4f1bd1db66cb9e74b7b1fe443078b44
+checksum=a7dda0b46c3af5f9e319b62c540af0b75ce2caaf8a54232b7745ee1e611b9688
 
 do_build() {
 	# The upstream Makefile's default target is just this Cargo command. Avoid
@@ -59,6 +60,12 @@ do_install() {
 		vmkdir usr/share/icons/hicolor/scalable/status
 		vcopy data/icons/scalable/* usr/share/icons/hicolor/scalable/status/
 	fi
+	# Tray icons: scalable SVGs the tray references by name (IconName), so the
+	# panel renders them at its own size instead of scaling a 512 px bitmap.
+	# They come from files/ because the patch changes code, not assets.
+	vinstall ${FILESDIR}/icons/rog-tray-blue.svg 644 usr/share/icons/hicolor/scalable/status
+	vinstall ${FILESDIR}/icons/rog-tray-red.svg 644 usr/share/icons/hicolor/scalable/status
+	vinstall ${FILESDIR}/icons/rog-tray-white.svg 644 usr/share/icons/hicolor/scalable/status
 	# ── udev ──
 	# data/asusd.rules is not installed: it only sets TAG+="systemd" and
 	# ENV{SYSTEMD_WANTS}+="asusd.service asus-shutdown.service".
@@ -114,7 +121,8 @@ do_install() {
 
 asusctl-plasma_package() {
 	short_desc="KDE Plasma widget for ASUS ROG laptops"
-	depends="asusctl plasma-workspace kf6-kirigami plasma5support"
+	depends="${sourcepkg}>=${version}_${revision} plasma-workspace kf6-kirigami
+	 plasma5support"
 	# The widget is own work, not part of upstream asusctl.
 	license="MIT"
 

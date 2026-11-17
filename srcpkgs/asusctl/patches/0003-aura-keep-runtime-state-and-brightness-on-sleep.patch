@@ -17,7 +17,7 @@
 #    by the D-Bus brightness setter).
 #
 # Depends on 0001 (which registers this sleep handler).
-# Upstream status at f537fca (2026-11-03): runtime fields are still reset and
+# Upstream status at 5346e18 (2026-11-17): runtime fields are still reset and
 # a zero brightness can still be saved. See PATCHES.md.
 --- a/asusd/src/aura_laptop/mod.rs
 +++ b/asusd/src/aura_laptop/mod.rs
