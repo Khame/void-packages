@@ -282,8 +282,9 @@ printed `High`.
 Revision 12's tray icons were checked on 2026-11-15 with `rog-control-center`
 in a test D-Bus session. The StatusNotifierItem registered with
 `IconName=rog-tray-red`, and the panel rendered the SVG sharply. The tray code
-is unchanged in the `5346e18` snapshot. Sleep and hibernation were not retested
-for revision 12.
+is unchanged in the `5346e18` snapshot. The sleep and hibernate code paths are
+also unchanged, so the suspend/resume result from revision 9 and the
+hibernation result from revision 6 still apply.
 
 Note that `busctl emit` cannot be used to test this: zbus matches the signal
 sender, and a signal from another connection does not reach the handler.
