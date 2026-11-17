@@ -1,6 +1,6 @@
 # Template file for 'kxbps'
 pkgname=kxbps
-version=0.12.0
+version=0.12.1
 revision=1
 build_style=cargo
 hostmakedepends="gettext lld qt6-base-devel"
@@ -12,7 +12,7 @@ maintainer="Khame <khame.dev@protonmail.com>"
 license="GPL-3.0-or-later"
 homepage="https://github.com/Khame/kxbps"
 distfiles="${homepage}/releases/download/v${version}/kxbps-${version}.tar.gz"
-checksum=2597e0c4320878e63208054d79237e3726cafd9323165121c65c384ed7dd61c7
+checksum=8379741eacffd090e69c5f1bf31276e3ba46add12c0069ec219743605b518450
 
 # The default do_install would `cargo install` every binary in the workspace
 # into /usr/bin. The two helpers are only ever started by polkit, and the
