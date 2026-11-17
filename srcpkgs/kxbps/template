@@ -1,18 +1,19 @@
 # Template file for 'kxbps'
 pkgname=kxbps
-version=0.12.1
+version=0.12.2
 revision=1
 build_style=cargo
 hostmakedepends="gettext lld qt6-base-devel"
 makedepends="qt6-base-devel qt6-declarative-devel kf6-kirigami-devel
  kf6-ki18n-devel kf6-kstatusnotifieritem-devel"
-depends="kf6-kirigami kf6-kstatusnotifieritem polkit qt6-svg xbps"
+depends="kf6-kirigami kf6-kstatusnotifieritem kf6-qqc2-desktop-style kf6-sonnet
+ polkit qt6-svg xbps"
 short_desc="Native KDE Plasma front end for the xbps package manager"
 maintainer="Khame <khame.dev@protonmail.com>"
 license="GPL-3.0-or-later"
 homepage="https://github.com/Khame/kxbps"
-distfiles="${homepage}/releases/download/v${version}/kxbps-${version}.tar.gz"
-checksum=8379741eacffd090e69c5f1bf31276e3ba46add12c0069ec219743605b518450
+distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
+checksum=7632a0673804e55594d6c85acaff6ce51edb2171df94a1d55da61f752d18cebc
 
 # The default do_install would `cargo install` every binary in the workspace
 # into /usr/bin. The two helpers are only ever started by polkit, and the

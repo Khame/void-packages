@@ -1,7 +1,8 @@
 # Khame XBPS repository
 
 Signed x86_64 packages for Void Linux, built for runit. These are not official
-Void Linux packages.
+Void Linux packages. Everything is published for glibc; `kxbps` is published for
+`x86_64-musl` as well.
 
 The repository is served from GitHub Pages:
 https://khame.github.io/void-packages/
@@ -17,6 +18,8 @@ https://khame.github.io/void-packages/
 | `sensei310-tray` | KDE tray controller for the SteelSeries Sensei 310. | [Khame/sensei310-tray](https://github.com/Khame/sensei310-tray) |
 
 `rivalcfg` is installed as a dependency of `sensei310-tray`.
+
+Only `kxbps` is published for `x86_64-musl`.
 
 ## Add the repository
 
@@ -43,6 +46,14 @@ ssh-keygen -E md5 -lf <(ssh-keygen -i -m PKCS8 -f Khame-void-repo.pub)
 
 The result should match the fingerprint above. It shows the key and the
 fingerprint belong together, though both come from the same site.
+
+On an `x86_64-musl` system the line names the musl tree, which carries the same
+key and `kxbps` alone:
+
+```sh
+sudo sh -c 'echo "repository=https://khame.github.io/void-packages/musl" > /etc/xbps.d/10-khame.conf'
+sudo xbps-install -S
+```
 
 ## Install packages
 
@@ -73,6 +84,6 @@ Installed packages stay on the system. Remove them separately with
 ## Build sources
 
 Templates, patches and packaging files are in `srcpkgs/`. The binary packages in
-`docs/` were built from them. See [LICENSES.md](LICENSES.md) for the licenses of
+`docs/` (glibc) and `docs/musl/` (musl) were built from them. See [LICENSES.md](LICENSES.md) for the licenses of
 the packaged software. The MIT license in [LICENSE](LICENSE) covers only the
 files written for this repository.

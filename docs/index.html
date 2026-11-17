@@ -13,7 +13,9 @@
 </head>
 <body>
 <h1>Khame XBPS repository</h1>
-<p>Signed <code>x86_64</code> packages for Void Linux, built for runit (no systemd).</p>
+<p>Signed <code>x86_64</code> packages for Void Linux, built for runit (no systemd).
+Everything is published for glibc; <code>kxbps</code> is published for
+<code>x86_64-musl</code> as well.</p>
 
 <h2>Packages</h2>
 <ul>
@@ -35,6 +37,11 @@ sudo xbps-install -S      # answer Y to import the repository key
 sudo xbps-install asusctl doublecmd kxbps sensei310-tray</pre>
 <p><code>rivalcfg</code> is installed as a dependency of <code>sensei310-tray</code>.
 <code>asusctl-plasma</code> is the optional Plasma widget for <code>asusctl</code>.</p>
+<p>On an <code>x86_64-musl</code> system the repository line names the musl tree, which
+carries the same key and <code>kxbps</code> alone:</p>
+<pre>sudo sh -c 'echo "repository=https://khame.github.io/void-packages/musl/" &gt; /etc/xbps.d/10-khame.conf'
+sudo xbps-install -S
+sudo xbps-install kxbps</pre>
 
 <h2>Contact</h2>
 <p>Questions and build reports: <a href="mailto:khame.dev@protonmail.com">khame.dev@protonmail.com</a></p>
