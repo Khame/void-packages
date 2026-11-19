@@ -3,9 +3,20 @@ pkgname=kxbps
 version=0.12.3
 revision=1
 build_style=cargo
-hostmakedepends="gettext lld qt6-base-devel"
+# lld: cxx-qt-build emits -fuse-ld=lld once it finds lld on the host; GNU ld
+# drops the initializers the generated C++ needs and the link fails.
+# qt6-base: qmake6, which cxx-qt-build runs to locate Qt; qmake6 is not in -devel.
+hostmakedepends="gettext lld qt6-base"
 makedepends="qt6-base-devel qt6-declarative-devel kf6-kirigami-devel
  kf6-ki18n-devel kf6-kstatusnotifieritem-devel"
+
+# depends: the pieces the automatic scan cannot see.
+#  kf6-kirigami, kf6-qqc2-desktop-style  QML modules loaded by import, never linked
+#  kf6-sonnet   loaded by the desktop style's text fields, not imported here
+#  qt6-svg      the imageformat plugin that draws the SVG icons
+#  polkit       pkexec, started by absolute path
+#  xbps         xbps-query/xbps-install, started by absolute path
+#  kf6-kstatusnotifieritem  linked; listed for clarity
 depends="kf6-kirigami kf6-kstatusnotifieritem kf6-qqc2-desktop-style kf6-sonnet
  polkit qt6-svg xbps"
 short_desc="Native KDE Plasma front end for the xbps package manager"
