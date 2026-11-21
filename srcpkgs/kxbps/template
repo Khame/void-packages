@@ -1,12 +1,18 @@
 # Template file for 'kxbps'
 pkgname=kxbps
-version=0.12.3
+version=0.13.0
 revision=1
 build_style=cargo
+# Cross builds: the helper writes a qmake6 wrapper whose qtconf points at the
+# target sysroot. cxx-qt-build finds Qt through qmake, and build.rs takes the
+# KF6 include root from the same answer.
+build_helper="qmake6"
 # lld: cxx-qt-build emits -fuse-ld=lld once it finds lld on the host; GNU ld
 # drops the initializers the generated C++ needs and the link fails.
 # qt6-base: qmake6, which cxx-qt-build runs to locate Qt; qmake6 is not in -devel.
-hostmakedepends="gettext lld qt6-base"
+# qt6-declarative-host-tools: moc and qmlcachegen run on the build host, and in
+# a cross build the target copies cannot execute there.
+hostmakedepends="gettext lld qt6-base qt6-declarative-host-tools"
 makedepends="qt6-base-devel qt6-declarative-devel kf6-kirigami-devel
  kf6-ki18n-devel kf6-kstatusnotifieritem-devel"
 
@@ -22,9 +28,17 @@ depends="kf6-kirigami kf6-kstatusnotifieritem kf6-qqc2-desktop-style kf6-sonnet
 short_desc="Native KDE Plasma front end for the xbps package manager"
 maintainer="Khame <khame.dev@protonmail.com>"
 license="GPL-3.0-or-later"
-homepage="https://github.com/Khame/kxbps"
-distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
-checksum=5ca76206c3cc2e58c7339c383c761e8f9f21a1254a8e5c72d842b2c35a8c6acb
+homepage="https://kxbps.khame.dev/"
+distfiles="https://github.com/Khame/kxbps/archive/refs/tags/v${version}.tar.gz"
+checksum=3c237e69f67a8e3c4c054a41c9756578ae4e34da68754cdcbdfe4fcbdadc7b0a
+
+# The export stays inside CROSS_BUILD so a native build keeps the qmake path
+# from .cargo/config.toml.
+pre_build() {
+	if [ "$CROSS_BUILD" ]; then
+		export QMAKE="${XBPS_WRAPPERDIR}/qmake6"
+	fi
+}
 
 # The default do_install would `cargo install` every binary in the workspace
 # into /usr/bin. The two helpers are only ever started by polkit, and the
