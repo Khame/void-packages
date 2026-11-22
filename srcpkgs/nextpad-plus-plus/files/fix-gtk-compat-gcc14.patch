@@ -1,0 +1,20 @@
+--- a/src/gtk_compat.h
++++ b/src/gtk_compat.h
+@@ -25,7 +25,7 @@
+  * pack_end has no GTK4 equivalent; npp_box_pack_end appends (correct for the
+  * common single-end-child case — revisit any box with multiple end children).
+  */
+-static inline void npp_box_pack(GtkWidget *box, GtkWidget *child,
++static inline void npp_box_pack(gpointer box, GtkWidget *child,
+                                 gboolean expand, int padding)
+ {
+     gboolean horiz = gtk_orientable_get_orientation(GTK_ORIENTABLE(box))
+@@ -43,7 +43,7 @@
+     gtk_box_append(GTK_BOX(box), child);
+ }
+ 
+-static inline void npp_box_pack_end(GtkWidget *box, GtkWidget *child,
++static inline void npp_box_pack_end(gpointer box, GtkWidget *child,
+                                     gboolean expand, int padding)
+ {
+     npp_box_pack(box, child, expand, padding);

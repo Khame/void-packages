@@ -1,0 +1,11 @@
+--- a/src/lexilla_bridge.cpp
++++ b/src/lexilla_bridge.cpp
+@@ -5,3 +5,8 @@
+ {
+     return (void *)CreateLexer(name);
+ }
++
++/* Upstream builds Scintilla with the SCI_OWNREGEX patch, which exports this
++ * toggle. The plain GTK4 fork we build has no Boost regex backend, so keep
++ * the app's preference writes harmless with std::regex as the only engine. */
++extern "C" bool gNppUseBoostRegex = false;

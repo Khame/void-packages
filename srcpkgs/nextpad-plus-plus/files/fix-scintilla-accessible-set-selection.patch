@@ -1,0 +1,11 @@
+--- a/scintilla/gtk4/ScintillaView.cxx
++++ b/scintilla/gtk4/ScintillaView.cxx
+@@ -2229,7 +2229,7 @@
+ 	return TRUE;
+ }
+ 
+-gboolean ScintillaView::accessible_set_selection(GtkAccessibleText *, gsize i, GtkAccessibleTextRange *range) noexcept {
++gboolean ScintillaView::accessible_set_selection(GtkAccessibleText *accessible, gsize i, GtkAccessibleTextRange *range) noexcept {
+ 	ScintillaView *view = SCINTILLA_VIEW(accessible);
+ 	scintilla_view_recent_instance = view;
+ 

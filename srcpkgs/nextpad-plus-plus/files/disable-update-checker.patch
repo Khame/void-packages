@@ -1,0 +1,21 @@
+--- a/src/prefs.c
++++ b/src/prefs.c
+@@ -179,7 +179,7 @@
+     .in_sel_threshold        = 1024,
+     .search_engine_url       = "https://duckduckgo.com/?q=%s",
+     .custom_browser          = "",
+-    .auto_check_updates      = TRUE,   /* GAP-107 (macOS default YES) */
++    .auto_check_updates      = FALSE,  /* updates come from xbps on Void */
+     /* Delimiter */
+     .delim_open              = "(",
+     .delim_close             = ")",
+--- a/src/updatecheck.c
++++ b/src/updatecheck.c
+@@ -202,6 +202,8 @@
+ gboolean updatecheck_is_due(void)
+ {
++    /* Void packages are upgraded with xbps; never contact upstream. */
++    return FALSE;
+     if (!g_prefs.auto_check_updates) return FALSE;
+     if (s_in_flight) return FALSE;
+     gint64 now = g_get_real_time() / G_USEC_PER_SEC;

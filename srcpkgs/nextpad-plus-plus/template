@@ -1,0 +1,82 @@
+# Template file for 'nextpad-plus-plus'
+pkgname=nextpad-plus-plus
+version=1.1.2.1
+revision=2
+build_style=cmake
+# The GitHub tarball unpacks to nextpad-plus-plus-linux-<version>, while
+# xbps-src names the wrapper directory <pkgname>-<version>.
+build_wrksrc="nextpad-plus-plus-linux-${version}"
+configure_args="-DNPP_RES_DIR=/usr/share/nextpad-plus-plus"
+# Upstream's release tarball is missing the vendored Scintilla GTK4 tree, so
+# fetch the exact fork/commit the Linux port is built against and drop it in
+# place before configuring.
+_sci_commit=3ba9b8f09851b60180ce57ee908c6eb57c751368
+hostmakedepends="cmake ninja pkg-config"
+makedepends="gtk4-devel libadwaita-devel uchardet-devel"
+depends="gtk4 libadwaita uchardet"
+short_desc="Native Linux port of Notepad++ based on GTK4 and Scintilla"
+maintainer="Khame <khame.dev@protonmail.com>"
+license="GPL-3.0-or-later"
+homepage="https://nextpad.org/"
+distfiles="https://github.com/nextpad-plus-plus/nextpad-plus-plus-linux/archive/refs/tags/v${version}.tar.gz
+ https://github.com/bugaevc/scintilla/archive/${_sci_commit}.tar.gz"
+checksum="64b3a50f7fe3f16d0dc6840bd558a63bf491a0039deadecb2f8c97b70f8709f2
+ 3db4dc8619432233240a6f00154ee73c2a8e91fe67ef20e845d2aa57700f4adf"
+
+pre_configure() {
+	# Upstream was built with GCC 13; GCC 14 promotes these two diagnostics
+	# to errors. Keep them warnings so the unmodified C sources compile.
+	export CFLAGS+=" -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration"
+	local _sci_dir="${wrksrc}/${build_wrksrc}/scintilla"
+	if [ -d "${XBPS_BUILDDIR}/${pkgname}-${version}/scintilla-${_sci_commit}" ]; then
+		mv "${XBPS_BUILDDIR}/${pkgname}-${version}/scintilla-${_sci_commit}" "${_sci_dir}"
+	elif [ -d "${wrksrc}/scintilla" ]; then
+		mv "${wrksrc}/scintilla" "${_sci_dir}"
+	fi
+	# GCC 14 turns incompatible pointer types into an error; upstream was
+	# built with GCC 13 where this was only a warning.
+	if ! grep -q 'npp_box_pack(gpointer' \
+		"${wrksrc}/${build_wrksrc}/src/gtk_compat.h"; then
+		patch -p1 -d "${wrksrc}/${build_wrksrc}" \
+			< "${FILESDIR}/fix-gtk-compat-gcc14.patch"
+	fi
+	if ! grep -q '#include "macrobatch.h"' \
+		"${wrksrc}/${build_wrksrc}/src/main.c"; then
+		patch -p1 -d "${wrksrc}/${build_wrksrc}" \
+			< "${FILESDIR}/fix-macrobatch-include.patch"
+	fi
+	if ! grep -q 'gNppUseBoostRegex = false' \
+		"${wrksrc}/${build_wrksrc}/src/lexilla_bridge.cpp"; then
+		patch -p1 -d "${wrksrc}/${build_wrksrc}" \
+			< "${FILESDIR}/fix-boost-regex-symbol.patch"
+	fi
+	# Upstream tags v1.1.2.1 but still ships APP_VERSION 1.1.0, which
+	# makes the in-app update checker nag about its own release.
+	if ! grep -q 'APP_VERSION       "1.1.2.1"' \
+		"${wrksrc}/${build_wrksrc}/src/branding.h"; then
+		patch -p1 -d "${wrksrc}/${build_wrksrc}" \
+			< "${FILESDIR}/fix-app-version.patch"
+	fi
+	# Updates are handled by xbps; upstream's release URL would ship a
+	# .deb/.rpm built against non-Void libraries, so never auto-check.
+	if ! grep -q 'Void packages are upgraded with xbps' \
+		"${wrksrc}/${build_wrksrc}/src/updatecheck.c"; then
+		patch -p1 -d "${wrksrc}/${build_wrksrc}" \
+			< "${FILESDIR}/disable-update-checker.patch"
+	fi
+	# Bug in the GTK4 Scintilla fork: the parameter is unnamed but used below.
+	if ! grep -q 'accessible_set_selection(GtkAccessibleText \*accessible' \
+		"${_sci_dir}/gtk4/ScintillaView.cxx"; then
+		patch -p1 -d "${wrksrc}/${build_wrksrc}" \
+			< "${FILESDIR}/fix-scintilla-accessible-set-selection.patch"
+	fi
+}
+
+post_install() {
+	# Void does not use AppArmor by default; the upstream profile is for
+	# Ubuntu's WebKitGTK sandbox and has no meaning here.
+	rm -f "${DESTDIR}/etc/apparmor.d/nextpad-plus-plus"
+	rmdir "${DESTDIR}/etc/apparmor.d" 2>/dev/null || true
+	vlicense LICENSE
+	vlicense NOTICE
+}

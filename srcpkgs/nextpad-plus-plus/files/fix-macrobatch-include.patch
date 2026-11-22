@@ -1,0 +1,9 @@
+--- a/src/main.c
++++ b/src/main.c
+@@ -46,6 +46,7 @@
+ #include "findinfiles.h"
+ #include "macro.h"
++#include "macrobatch.h"
+ #include "funclist.h"
+ #include "docmap.h"
+ #include "workspace.h"
