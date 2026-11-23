@@ -1,0 +1,99 @@
+# Template file for 'kxbps'
+pkgname=kxbps
+version=0.13.0
+revision=1
+build_style=cargo
+# Cross builds: the helper writes a qmake6 wrapper whose qtconf points at the
+# target sysroot. cxx-qt-build finds Qt through QMAKE, and pre_build exports
+# the wrapper there.
+build_helper="qmake6"
+# lld: cxx-qt-build emits -fuse-ld=lld once it finds lld on the host; GNU ld
+# drops the initializers the generated C++ needs and the link fails.
+# qt6-base: qmake6, which cxx-qt-build runs to locate Qt; qmake6 is not in -devel.
+# qt6-declarative-host-tools: moc and qmlcachegen run on the build host, and in
+# a cross build the target copies cannot execute there.
+hostmakedepends="gettext lld qt6-base qt6-declarative-host-tools"
+makedepends="qt6-base-devel qt6-declarative-devel kf6-kirigami-devel
+ kf6-ki18n-devel kf6-kstatusnotifieritem-devel"
+
+# depends: the pieces the automatic scan cannot see.
+#  kf6-kirigami, kf6-qqc2-desktop-style  QML modules loaded by import, never linked
+#  kf6-sonnet   loaded by the desktop style's text fields, not imported here
+#  qt6-svg      the imageformat plugin that draws the SVG icons
+#  polkit       pkexec, started by absolute path
+#  xbps         xbps-query/xbps-install, started by absolute path
+#  kf6-kstatusnotifieritem  linked; listed for clarity
+depends="kf6-kirigami kf6-kstatusnotifieritem kf6-qqc2-desktop-style kf6-sonnet
+ polkit qt6-svg xbps"
+short_desc="Native KDE Plasma front end for the xbps package manager"
+maintainer="Khame <khame.dev@protonmail.com>"
+license="GPL-3.0-or-later"
+homepage="https://kxbps.khame.dev/"
+distfiles="https://github.com/Khame/kxbps/archive/refs/tags/v${version}.tar.gz"
+checksum=3c237e69f67a8e3c4c054a41c9756578ae4e34da68754cdcbdfe4fcbdadc7b0a
+
+# i686 only: cxx-qt-lib 0.10.0 assumes a QVariant payload of three usize, while
+# 32-bit Qt builds a 16-byte QVariant, so the C++ static_assert fires with
+# (20 == 16) and the build stops. The fix is not upstream (no release after
+# 0.10.0, master still has [usize; 3]), so we carry it here.
+# Patch by zenobit <zen@osowos.org>, from oSoWoSo/oco; the file keeps his
+# From/Source header. Verified on Void i686 with the source that reports
+# 0.13.0 (main); 0.13.1 has not been rebuilt since this change.
+# The patch lives in files/, not patches/, because it only applies after
+# `cargo vendor` and only matters on i686. Running that on x86_64 would make
+# every build depend on the patch still applying.
+pre_patch() {
+	[ "$XBPS_TARGET_MACHINE" = i686 ] || return 0
+	mkdir -p .cargo
+	cargo vendor --locked --versioned-dirs >.cargo/vendor.toml
+	cat .cargo/vendor.toml >>.cargo/config.toml
+	local checksum=vendor/cxx-qt-lib-0.10.0/.cargo-checksum.json
+	local package
+	package=$(grep -o '"package":[[:space:]]*[^}]*' "$checksum")
+	printf '{"files":{},%s}\n' "$package" >"$checksum"
+	patch -Np1 -i "${FILESDIR}/cxx-qt-lib-i686-qvariant.patch"
+}
+
+# A cross build compiles against the headers under ${XBPS_CROSS_BASE}/usr/include,
+# but build.rs names the KF6 and Qt integration directories under /usr/include
+# by hand. The patch goes away once build.rs asks qmake for QT_INSTALL_HEADERS.
+pre_build() {
+	if [ "$CROSS_BUILD" ]; then
+		export QMAKE="${XBPS_WRAPPERDIR}/qmake6"
+		vsed -i -e "s|/usr/include/|${XBPS_CROSS_BASE}/usr/include/|g" \
+			kxbps-qt/build.rs
+	fi
+}
+
+# The default do_install would `cargo install` every binary in the workspace
+# into /usr/bin. The two helpers are only ever started by polkit, and the
+# policy names them under /usr/libexec.
+do_install() {
+	vbin target/${RUST_TARGET}/release/kxbps
+	vinstall target/${RUST_TARGET}/release/kxbps-mirror-apply 755 usr/libexec
+	vinstall target/${RUST_TARGET}/release/kxbps-repo-apply 755 usr/libexec
+
+	vinstall packaging/icons/app/kxbps.svg 644 \
+		usr/share/icons/hicolor/scalable/apps
+	vinstall packaging/icons/app/kxbps-updates.svg 644 \
+		usr/share/icons/hicolor/scalable/apps
+	vinstall packaging/icons/tray/symbolic/kxbps-tray.svg 644 \
+		usr/share/icons/hicolor/scalable/status
+	vinstall packaging/icons/tray/symbolic/kxbps-tray-updates.svg 644 \
+		usr/share/icons/hicolor/scalable/status
+	vinstall packaging/icons/tray/symbolic/kxbps-tray.svg 644 \
+		usr/share/icons/hicolor/scalable/status kxbps-tray-symbolic.svg
+	vinstall packaging/icons/tray/symbolic/kxbps-tray-updates.svg 644 \
+		usr/share/icons/hicolor/scalable/status kxbps-tray-updates-symbolic.svg
+	vinstall packaging/io.github.khame.kxbps.desktop 644 usr/share/applications
+	vinstall packaging/io.github.khame.kxbps.metainfo.xml 644 usr/share/metainfo
+	vinstall packaging/io.github.khame.kxbps.policy 644 usr/share/polkit-1/actions
+	vman man/kxbps.1
+
+	for file in po/*.po; do
+		[ -f "$file" ] || continue
+		lang=$(basename "$file" .po)
+		vmkdir usr/share/locale/$lang/LC_MESSAGES
+		msgfmt -o "${DESTDIR}/usr/share/locale/$lang/LC_MESSAGES/kxbps.mo" "$file"
+	done
+}
