@@ -32,6 +32,27 @@ homepage="https://kxbps.khame.dev/"
 distfiles="https://github.com/Khame/kxbps/archive/refs/tags/v${version}.tar.gz"
 checksum=3c237e69f67a8e3c4c054a41c9756578ae4e34da68754cdcbdfe4fcbdadc7b0a
 
+# i686 only: cxx-qt-lib 0.10.0 reserves three usize for the QVariant payload,
+# but 32-bit Qt builds a 16-byte QVariant, so the C++ static_assert fails with
+# (20 == 16) and the build stops. There is no release after 0.10.0 and master
+# still has [usize; 3], so the fix has to be carried here.
+# The patch lives in files/, not patches/, because it only applies after
+# `cargo vendor` and only matters on i686: running that on x86_64 would make
+# every build depend on the patch still applying.
+# Patch by zenobit <zen@osowos.org>, from oSoWoSo/oco; the file keeps his
+# From/Source header. Verified on Void i686 with 0.13.0.
+pre_patch() {
+	[ "$XBPS_TARGET_MACHINE" = i686 ] || return 0
+	mkdir -p .cargo
+	cargo vendor --locked --versioned-dirs >.cargo/vendor.toml
+	cat .cargo/vendor.toml >>.cargo/config.toml
+	local checksum=vendor/cxx-qt-lib-0.10.0/.cargo-checksum.json
+	local package
+	package=$(grep -o '"package":[[:space:]]*[^}]*' "$checksum")
+	printf '{"files":{},%s}\n' "$package" >"$checksum"
+	patch -Np1 -i "${FILESDIR}/cxx-qt-lib-i686-qvariant.patch"
+}
+
 # The export stays inside CROSS_BUILD so a native build keeps the qmake path
 # from .cargo/config.toml.
 pre_build() {
