@@ -1,7 +1,7 @@
 # Template file for 'kxbps'
 pkgname=kxbps
 version=0.13.0
-revision=1
+revision=2
 build_style=cargo
 # Cross builds: the helper writes a qmake6 wrapper whose qtconf points at the
 # target sysroot. cxx-qt-build finds Qt through qmake, and build.rs takes the
@@ -20,11 +20,12 @@ makedepends="qt6-base-devel qt6-declarative-devel kf6-kirigami-devel
 #  kf6-kirigami, kf6-qqc2-desktop-style  QML modules loaded by import, never linked
 #  kf6-sonnet   loaded by the desktop style's text fields, not imported here
 #  qt6-svg      the imageformat plugin that draws the SVG icons
+#  qt6-plugin-tls-openssl  the TLS backend QNetworkAccessManager loads for HTTPS
 #  polkit       pkexec, started by absolute path
 #  xbps         xbps-query/xbps-install, started by absolute path
 #  kf6-kstatusnotifieritem  linked; listed for clarity
 depends="kf6-kirigami kf6-kstatusnotifieritem kf6-qqc2-desktop-style kf6-sonnet
- polkit qt6-svg xbps"
+ polkit qt6-plugin-tls-openssl qt6-svg xbps"
 short_desc="Native KDE Plasma front end for the xbps package manager"
 maintainer="Khame <khame.dev@protonmail.com>"
 license="GPL-3.0-or-later"
@@ -32,15 +33,16 @@ homepage="https://kxbps.khame.dev/"
 distfiles="https://github.com/Khame/kxbps/archive/refs/tags/v${version}.tar.gz"
 checksum=3c237e69f67a8e3c4c054a41c9756578ae4e34da68754cdcbdfe4fcbdadc7b0a
 
-# i686 only: cxx-qt-lib 0.10.0 reserves three usize for the QVariant payload,
-# but 32-bit Qt builds a 16-byte QVariant, so the C++ static_assert fails with
-# (20 == 16) and the build stops. There is no release after 0.10.0 and master
-# still has [usize; 3], so the fix has to be carried here.
+# i686 only: cxx-qt-lib 0.10.0 assumes a QVariant payload of three usize, while
+# 32-bit Qt builds a 16-byte QVariant, so the C++ static_assert fires with
+# (20 == 16) and the build stops. The fix is not upstream (no release after
+# 0.10.0, master still has [usize; 3]), so we carry it here.
+# Patch by zenobit <zen@osowoso.org>, from oSoWoSo/oco; the file keeps his
+# From/Source header. Verified on Void i686 with the source that reports
+# 0.13.0 (main); 0.13.1 has not been rebuilt since this change.
 # The patch lives in files/, not patches/, because it only applies after
-# `cargo vendor` and only matters on i686: running that on x86_64 would make
+# `cargo vendor` and only matters on i686. Running that on x86_64 would make
 # every build depend on the patch still applying.
-# Patch by zenobit <zen@osowos.org>, from oSoWoSo/oco; the file keeps his
-# From/Source header. Verified on Void i686 with 0.13.0.
 pre_patch() {
 	[ "$XBPS_TARGET_MACHINE" = i686 ] || return 0
 	mkdir -p .cargo
