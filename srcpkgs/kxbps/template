@@ -1,7 +1,7 @@
 # Template file for 'kxbps'
 pkgname=kxbps
 version=0.13.0
-revision=2
+revision=3
 build_style=cargo
 # Cross builds: the helper writes a qmake6 wrapper whose qtconf points at the
 # target sysroot. cxx-qt-build finds Qt through qmake, and build.rs takes the

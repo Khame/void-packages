@@ -1,0 +1,56 @@
+From: Khame <khame.dev@protonmail.com>
+Subject: [PATCH] fix(ui): reload the installed set when a job settles
+
+xbps can exit non-zero after doing the work, and the update list is built
+from the snapshot, so it kept showing what had just been applied. Backported
+from 73a8049 on the testing branch; drop this file when the version carries
+the fix itself.
+
+---
+diff --git a/kxbps-qt/qml/Main.qml b/kxbps-qt/qml/Main.qml
+index 07604ce..025623a 100644
+--- a/kxbps-qt/qml/Main.qml
++++ b/kxbps-qt/qml/Main.qml
+@@ -633,6 +633,10 @@ Kirigami.ApplicationWindow {
+                 // A transaction can move the repository index; the next
+                 // Available visit reads it instead of the cached listing.
+                 catalogBackend.invalidateListSearch()
++                // It also moved the installed set, and a failed exit code does not
++                // mean nothing happened: without this read the update list keeps
++                // showing what was just applied.
++                installedBackend.reload()
+             }
+         }
+     }
+diff --git a/kxbps-qt/src/lib.rs b/kxbps-qt/src/lib.rs
+index d495ec9..aea83d4 100644
+--- a/kxbps-qt/src/lib.rs
++++ b/kxbps-qt/src/lib.rs
+@@ -494,6 +494,27 @@ mod uri_guard {
+     }
+ }
+ 
++/// A finished job changes the installed set, and the update list is built from it:
++/// without a read after the job the page keeps showing what was just applied.
++#[cfg(test)]
++mod settled_job_guard {
++    #[test]
++    fn a_settled_job_reloads_the_installed_set() {
++        let main_qml = include_str!("../qml/Main.qml");
++        let marker = "function onDoneChanged()";
++        let start = main_qml
++            .find(marker)
++            .unwrap_or_else(|| panic!("Main.qml has no `{marker}`"))
++            + marker.len();
++        let body = &main_qml[start..];
++        let end = body.find("\n    }").expect("the handler never closes");
++        assert!(
++            body[..end].contains("installedBackend.reload()"),
++            "a finished job leaves the update list stale: reload the installed set"
++        );
++    }
++}
++
+ /// The dock badge shows the update count, and zero means "no badge".
+ ///
+ /// The clamp is the only decision here, but it is the one that reaches Qt: a
